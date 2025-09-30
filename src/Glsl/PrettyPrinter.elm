@@ -117,14 +117,8 @@ expr root =
                 Float f ->
                     float f
 
-                Double d ->
-                    double d
-
                 Int i ->
                     String.fromInt i
-
-                Uint u ->
-                    String.fromInt u
 
                 Variable v ->
                     v
@@ -834,11 +828,6 @@ type_ t =
 
         TsamplerShadow ->
             "samplerShadow"
-
-
-double : Float -> String
-double d =
-    float d
 
 
 float : Float -> String

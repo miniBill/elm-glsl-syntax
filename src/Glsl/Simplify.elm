@@ -76,11 +76,5 @@ expr root =
         Float _ ->
             root
 
-        Uint _ ->
-            root
-
-        Double _ ->
-            root
-
         Variable _ ->
             root

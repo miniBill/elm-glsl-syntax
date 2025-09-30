@@ -25,8 +25,6 @@ type Expression
     = Bool Bool
     | Int Int
     | Float Float
-    | Uint Int
-    | Double Float
     | Variable String
     | Ternary Expression Expression Expression
     | UnaryOperation UnaryOperation Expression
