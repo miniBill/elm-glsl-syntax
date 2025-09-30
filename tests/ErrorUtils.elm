@@ -40,28 +40,28 @@ contextToString : Glsl.Parser.Context -> String
 contextToString context =
     case context of
         Glsl.Parser.ParsingFile ->
-            "File"
+            "file"
 
         Glsl.Parser.ParsingFunction ->
-            "Function"
+            "function"
 
         Glsl.Parser.ParsingStatement ->
-            "Statement"
+            "statement"
 
         Glsl.Parser.ParsingExpression ->
-            "Expression"
+            "expression"
 
         Glsl.Parser.ParsingForInitialization ->
-            "For Initialization"
+            "for's initialization"
 
         Glsl.Parser.ParsingForCondition ->
-            "For Condition"
+            "for's condition"
 
         Glsl.Parser.ParsingForStep ->
-            "For Step"
+            "for's step"
 
         Glsl.Parser.ParsingForBody ->
-            "For Body"
+            "for's body"
 
 
 expectEqualMultiline : String -> String -> Expect.Expectation
