@@ -364,215 +364,479 @@ binaryOperation op =
 type_ : Type -> String
 type_ t =
     case t of
-        TFloat ->
-            "float"
-
-        TInt ->
-            "int"
-
-        TVec2 ->
-            "vec2"
-
-        TIVec2 ->
-            "ivec2"
-
-        TVec3 ->
-            "vec3"
-
-        TIVec3 ->
-            "ivec3"
-
-        TVec4 ->
-            "vec4"
-
-        TIVec4 ->
-            "ivec4"
-
-        TMat3 ->
-            "mat3"
-
-        TVoid ->
+        Tvoid ->
             "void"
 
-        TBool ->
-            "bool"
-
-        TBVec2 ->
-            "bvec2"
-
-        TBVec3 ->
-            "bvec3"
-
-        TBVec4 ->
-            "bvec4"
-
-        TUint ->
-            "uint"
-
-        TUVec2 ->
-            "uvec2"
-
-        TUVec3 ->
-            "uvec3"
-
-        TUVec4 ->
-            "uvec4"
-
-        TDouble ->
-            "double"
-
-        TDVec2 ->
-            "dvec2"
-
-        TDVec3 ->
-            "dvec3"
-
-        TDVec4 ->
-            "dvec4"
-
-        TMat2 ->
-            "mat2"
-
-        TMat4 ->
-            "mat4"
-
-        TMat23 ->
-            "mat2x3"
-
-        TMat24 ->
-            "mat2x4"
-
-        TMat32 ->
-            "mat3x2"
-
-        TMat34 ->
-            "mat3x4"
-
-        TMat42 ->
-            "mat4x2"
-
-        TMat43 ->
-            "mat4x3"
-
-        TDMat2 ->
-            "dmat2"
-
-        TDMat3 ->
-            "dmat3"
-
-        TDMat4 ->
-            "dmat4"
-
-        TDMat23 ->
-            "dmat2x3"
-
-        TDMat24 ->
-            "dmat2x4"
-
-        TDMat32 ->
-            "dmat3x2"
-
-        TDMat34 ->
-            "dmat3x4"
-
-        TDMat42 ->
-            "dmat4x2"
-
-        TDMat43 ->
-            "dmat4x3"
-
-        TIn tt ->
+        Tin tt ->
             "in " ++ type_ tt
 
-        TOut tt ->
+        Tout tt ->
             "out " ++ type_ tt
 
-        TSampler1D ->
+        Tbool ->
+            "bool"
+
+        Tbvec2 ->
+            "bvec2"
+
+        Tbvec3 ->
+            "bvec3"
+
+        Tbvec4 ->
+            "bvec4"
+
+        Tint ->
+            "int"
+
+        Tivec2 ->
+            "ivec2"
+
+        Tivec3 ->
+            "ivec3"
+
+        Tivec4 ->
+            "ivec4"
+
+        TFloat ->
+            "Float"
+
+        Tvec2 ->
+            "vec2"
+
+        Tvec3 ->
+            "vec3"
+
+        Tvec4 ->
+            "vec4"
+
+        Tmat2 ->
+            "mat2"
+
+        Tmat3 ->
+            "mat3"
+
+        Tmat4 ->
+            "mat4"
+
+        Tsampler1D ->
             "sampler1D"
 
-        TImage1D ->
-            "image1D"
-
-        TSampler2D ->
+        Tsampler2D ->
             "sampler2D"
 
-        TImage2D ->
-            "image2D"
-
-        TSampler3D ->
+        Tsampler3D ->
             "sampler3D"
 
-        TImage3D ->
-            "image3D"
-
-        TSamplerCube ->
+        TsamplerCube ->
             "samplerCube"
 
-        TImageCube ->
-            "imageCube"
+        Tuint ->
+            "uint"
 
-        TSampler2DRect ->
+        Tuvec2 ->
+            "uvec2"
+
+        Tuvec3 ->
+            "uvec3"
+
+        Tuvec4 ->
+            "uvec4"
+
+        Tmat2x2 ->
+            "mat2x2"
+
+        Tmat2x3 ->
+            "mat2x3"
+
+        Tmat2x4 ->
+            "mat2x4"
+
+        Tmat3x2 ->
+            "mat3x2"
+
+        Tmat3x3 ->
+            "mat3x3"
+
+        Tmat3x4 ->
+            "mat3x4"
+
+        Tmat4x2 ->
+            "mat4x2"
+
+        Tmat4x3 ->
+            "mat4x3"
+
+        Tmat4x4 ->
+            "mat4x4"
+
+        Tsampler2DRect ->
             "sampler2DRect"
 
-        TImage2DRect ->
-            "image2DRect"
-
-        TSampler1DArray ->
-            "sampler1DArray"
-
-        TImage1DArray ->
-            "image1DArray"
-
-        TSampler2DArray ->
-            "sampler2DArray"
-
-        TImage2DArray ->
-            "image2DArray"
-
-        TSamplerBuffer ->
-            "samplerBuffer"
-
-        TImageBuffer ->
-            "imageBuffer"
-
-        TSampler2DMS ->
-            "sampler2DMS"
-
-        TImage2DMS ->
-            "image2DMS"
-
-        TSampler2DMSArray ->
-            "sampler2DMSArray"
-
-        TImage2DMSArray ->
-            "image2DMSArray"
-
-        TSamplerCubeArray ->
-            "samplerCubeArray"
-
-        TImageCubeArray ->
-            "imageCubeArray"
-
-        TSampler1DShadow ->
+        Tsampler1DShadow ->
             "sampler1DShadow"
 
-        TSampler2DShadow ->
+        Tsampler2DShadow ->
             "sampler2DShadow"
 
-        TSampler2DRectShadow ->
+        Tsampler2DRectShadow ->
             "sampler2DRectShadow"
 
-        TSampler1DArrayShadow ->
+        Tsampler1DArray ->
+            "sampler1DArray"
+
+        Tsampler2DArray ->
+            "sampler2DArray"
+
+        Tsampler1DArrayShadow ->
             "sampler1DArrayShadow"
 
-        TSampler2DArrayShadow ->
+        Tsampler2DArrayShadow ->
             "sampler2DArrayShadow"
 
-        TSamplerCubeShadow ->
+        TsamplerBuffer ->
+            "samplerBuffer"
+
+        Tsampler2DMS ->
+            "sampler2DMS"
+
+        Tsampler2DMSArray ->
+            "sampler2DMSArray"
+
+        Tisampler1D ->
+            "isampler1D"
+
+        Tisampler2D ->
+            "isampler2D"
+
+        Tisampler3D ->
+            "isampler3D"
+
+        TisamplerCube ->
+            "isamplerCube"
+
+        Tisampler2DRect ->
+            "isampler2DRect"
+
+        Tisampler1DArray ->
+            "isampler1DArray"
+
+        Tisampler2DArray ->
+            "isampler2DArray"
+
+        TisamplerBuffer ->
+            "isamplerBuffer"
+
+        Tisampler2DMS ->
+            "isampler2DMS"
+
+        Tisampler2DMSArray ->
+            "isampler2DMSArray"
+
+        Tusampler1D ->
+            "usampler1D"
+
+        Tusampler2D ->
+            "usampler2D"
+
+        Tusampler3D ->
+            "usampler3D"
+
+        TusamplerCube ->
+            "usamplerCube"
+
+        Tusampler2DRect ->
+            "usampler2DRect"
+
+        Tusampler1DArray ->
+            "usampler1DArray"
+
+        Tusampler2DArray ->
+            "usampler2DArray"
+
+        TusamplerBuffer ->
+            "usamplerBuffer"
+
+        Tusampler2DMS ->
+            "usampler2DMS"
+
+        Tusampler2DMSArray ->
+            "usampler2DMSArray"
+
+        Tdouble ->
+            "double"
+
+        Tdvec2 ->
+            "dvec2"
+
+        Tdvec3 ->
+            "dvec3"
+
+        Tdvec4 ->
+            "dvec4"
+
+        Tdmat2 ->
+            "dmat2"
+
+        Tdmat3 ->
+            "dmat3"
+
+        Tdmat4 ->
+            "dmat4"
+
+        Tdmat2x2 ->
+            "dmat2x2"
+
+        Tdmat2x3 ->
+            "dmat2x3"
+
+        Tdmat2x4 ->
+            "dmat2x4"
+
+        Tdmat3x2 ->
+            "dmat3x2"
+
+        Tdmat3x3 ->
+            "dmat3x3"
+
+        Tdmat3x4 ->
+            "dmat3x4"
+
+        Tdmat4x2 ->
+            "dmat4x2"
+
+        Tdmat4x3 ->
+            "dmat4x3"
+
+        Tdmat4x4 ->
+            "dmat4x4"
+
+        Ttexture1D ->
+            "texture1D"
+
+        Timage1D ->
+            "image1D"
+
+        Tcomparison ->
+            "comparison"
+
+        Ttexture1DArray ->
+            "texture1DArray"
+
+        Timage1DArray ->
+            "image1DArray"
+
+        Ttexture2D ->
+            "texture2D"
+
+        Timage2D ->
+            "image2D"
+
+        Ttexture2DArray ->
+            "texture2DArray"
+
+        Timage2DArray ->
+            "image2DArray"
+
+        Ttexture2DMS ->
+            "texture2DMS"
+
+        Timage2DMS ->
+            "image2DMS"
+
+        Ttexture2DMSArray ->
+            "texture2DMSArray"
+
+        Timage2DMSArray ->
+            "image2DMSArray"
+
+        Ttexture2DRect ->
+            "texture2DRect"
+
+        Timage2DRect ->
+            "image2DRect"
+
+        Ttexture3D ->
+            "texture3D"
+
+        Timage3D ->
+            "image3D"
+
+        TtextureCube ->
+            "textureCube"
+
+        TimageCube ->
+            "imageCube"
+
+        TsamplerCubeShadow ->
             "samplerCubeShadow"
 
-        TSamplerCubeArrayShadow ->
+        TsamplerCubeArray ->
+            "samplerCubeArray"
+
+        TtextureCubeArray ->
+            "textureCubeArray"
+
+        TimageCubeArray ->
+            "imageCubeArray"
+
+        TsamplerCubeArrayShadow ->
             "samplerCubeArrayShadow"
+
+        TtextureBuffer ->
+            "textureBuffer"
+
+        TimageBuffer ->
+            "imageBuffer"
+
+        TsubpassInput ->
+            "subpassInput"
+
+        TsubpassInputMS ->
+            "subpassInputMS"
+
+        Titexture1DArray ->
+            "itexture1DArray"
+
+        Tiimage1DArray ->
+            "iimage1DArray"
+
+        Titexture2D ->
+            "itexture2D"
+
+        Tiimage2D ->
+            "iimage2D"
+
+        Titexture2DArray ->
+            "itexture2DArray"
+
+        Tiimage2DArray ->
+            "iimage2DArray"
+
+        Titexture2DMS ->
+            "itexture2DMS"
+
+        Tiimage2DMS ->
+            "iimage2DMS"
+
+        Titexture2DMSArray ->
+            "itexture2DMSArray"
+
+        Tiimage2DMSArray ->
+            "iimage2DMSArray"
+
+        Titexture2DRect ->
+            "itexture2DRect"
+
+        Tiimage2DRect ->
+            "iimage2DRect"
+
+        Titexture3D ->
+            "itexture3D"
+
+        Tiimage3D ->
+            "iimage3D"
+
+        TitextureCube ->
+            "itextureCube"
+
+        TiimageCube ->
+            "iimageCube"
+
+        TisamplerCubeArray ->
+            "isamplerCubeArray"
+
+        TitextureCubeArray ->
+            "itextureCubeArray"
+
+        TiimageCubeArray ->
+            "iimageCubeArray"
+
+        TitextureBuffer ->
+            "itextureBuffer"
+
+        TiimageBuffer ->
+            "iimageBuffer"
+
+        TisubpassInput ->
+            "isubpassInput"
+
+        TisubpassInputMS ->
+            "isubpassInputMS"
+
+        Tutexture1DArray ->
+            "utexture1DArray"
+
+        Tuimage1DArray ->
+            "uimage1DArray"
+
+        Tutexture2D ->
+            "utexture2D"
+
+        Tuimage2D ->
+            "uimage2D"
+
+        Tutexture2DArray ->
+            "utexture2DArray"
+
+        Tuimage2DArray ->
+            "uimage2DArray"
+
+        Tutexture2DMS ->
+            "utexture2DMS"
+
+        Tuimage2DMS ->
+            "uimage2DMS"
+
+        Tutexture2DMSArray ->
+            "utexture2DMSArray"
+
+        Tuimage2DMSArray ->
+            "uimage2DMSArray"
+
+        Tutexture2DRect ->
+            "utexture2DRect"
+
+        Tuimage2DRect ->
+            "uimage2DRect"
+
+        Tutexture3D ->
+            "utexture3D"
+
+        Tuimage3D ->
+            "uimage3D"
+
+        TutextureCube ->
+            "utextureCube"
+
+        TuimageCube ->
+            "uimageCube"
+
+        TusamplerCubeArray ->
+            "usamplerCubeArray"
+
+        TutextureCubeArray ->
+            "utextureCubeArray"
+
+        TuimageCubeArray ->
+            "uimageCubeArray"
+
+        TutextureBuffer ->
+            "utextureBuffer"
+
+        TuimageBuffer ->
+            "uimageBuffer"
+
+        TusubpassInput ->
+            "usubpassInput"
+
+        TusubpassInputMS ->
+            "usubpassInputMS"
+
+        Tsampler ->
+            "sampler"
+
+        TsamplerShadow ->
+            "samplerShadow"
 
 
 double : Float -> String

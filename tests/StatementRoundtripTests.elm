@@ -92,22 +92,22 @@ typeFuzzer =
         base : Fuzzer Type
         base =
             Fuzz.oneOfValues
-                [ TVoid
+                [ Tvoid
                 , TFloat
-                , TInt
-                , TBool
-                , TVec2
-                , TVec3
-                , TVec4
-                , TIVec2
-                , TIVec3
-                , TIVec4
-                , TMat3
+                , Tint
+                , Tbool
+                , Tvec2
+                , Tvec3
+                , Tvec4
+                , Tivec2
+                , Tivec3
+                , Tivec4
+                , Tmat3
                 ]
     in
     Fuzz.oneOf
         [ base
 
-        -- , Fuzz.map TIn base
-        -- , Fuzz.map TOut base
+        -- , Fuzz.map Tin base
+        -- , Fuzz.map Tout base
         ]

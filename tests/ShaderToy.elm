@@ -365,7 +365,7 @@ func t n a s =
 
 void : a -> ( Type, a )
 void s =
-    ( TVoid, s )
+    ( Tvoid, s )
 
 
 float : a -> ( Type, a )
@@ -375,32 +375,32 @@ float s =
 
 vec2 : a -> ( Type, a )
 vec2 s =
-    ( TVec2, s )
+    ( Tvec2, s )
 
 
 vec3 : a -> ( Type, a )
 vec3 s =
-    ( TVec3, s )
+    ( Tvec3, s )
 
 
 vec4 : a -> ( Type, a )
 vec4 s =
-    ( TVec4, s )
+    ( Tvec4, s )
 
 
 mat2 : a -> ( Type, a )
 mat2 s =
-    ( TMat2, s )
+    ( Tmat2, s )
 
 
 in_ : (String -> ( Type, a )) -> a -> ( Type, a )
 in_ t n =
-    ( TIn (Tuple.first (t "")), n )
+    ( Tin (Tuple.first (t "")), n )
 
 
 out : (String -> ( Type, a )) -> a -> ( Type, a )
 out t n =
-    ( TOut (Tuple.first (t "")), n )
+    ( Tout (Tuple.first (t "")), n )
 
 
 var : String -> Expression

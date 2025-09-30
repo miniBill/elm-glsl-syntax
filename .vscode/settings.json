@@ -22,6 +22,19 @@
         "samplercubearray",
         "samplercubearrayshadow",
         "samplercubeshadow",
+        "Tbool",
+        "Tbvec",
+        "Tdmat",
+        "Tdouble",
+        "Tdvec",
+        "Timage",
+        "Tivec",
+        "Tmat",
+        "Tsampler",
+        "Tuint",
+        "Tuvec",
+        "Tvec",
+        "Tvoid",
         "uvec"
     ]
 }

@@ -33,7 +33,7 @@ checkParses label source =
             o
                 |> Expect.equal
                     ( Just { version = 300 }
-                    , [ FunctionDeclaration TVoid "main" [] <|
+                    , [ FunctionDeclaration Tvoid "main" [] <|
                             [ ExpressionStatement
                                 (BinaryOperation
                                     (Variable "pos3")
