@@ -149,7 +149,7 @@ types =
     , ( "uvec2", Tuvec2 )
     , ( "uvec3", Tuvec3 )
     , ( "uvec4", Tuvec4 )
-    , ( "float", TFloat )
+    , ( "float", Tfloat )
     , ( "vec2", Tvec2 )
     , ( "vec3", Tvec3 )
     , ( "vec4", Tvec4 )

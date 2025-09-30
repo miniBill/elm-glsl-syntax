@@ -93,7 +93,7 @@ typeFuzzer =
         base =
             Fuzz.oneOfValues
                 [ Tvoid
-                , TFloat
+                , Tfloat
                 , Tint
                 , Tbool
                 , Tvec2

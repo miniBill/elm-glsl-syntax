@@ -397,7 +397,7 @@ type_ t =
         Tivec4 ->
             "ivec4"
 
-        TFloat ->
+        Tfloat ->
             "Float"
 
         Tvec2 ->

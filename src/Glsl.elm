@@ -134,7 +134,7 @@ type Type
     | Tivec3
     | Tivec4
       -- float
-    | TFloat
+    | Tfloat
     | Tvec2
     | Tvec3
     | Tvec4

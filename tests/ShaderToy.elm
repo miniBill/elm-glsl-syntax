@@ -370,7 +370,7 @@ void s =
 
 float : a -> ( Type, a )
 float s =
-    ( TFloat, s )
+    ( Tfloat, s )
 
 
 vec2 : a -> ( Type, a )
