@@ -398,7 +398,7 @@ type_ t =
             "ivec4"
 
         Tfloat ->
-            "Float"
+            "float"
 
         Tvec2 ->
             "vec2"
@@ -615,9 +615,6 @@ type_ t =
 
         Timage1D ->
             "image1D"
-
-        Tcomparison ->
-            "comparison"
 
         Ttexture1DArray ->
             "texture1DArray"

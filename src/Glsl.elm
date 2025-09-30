@@ -223,7 +223,6 @@ type Type
       --  sampler/texture/image
     | Ttexture1D
     | Timage1D
-    | Tcomparison
     | Ttexture1DArray
     | Timage1DArray
     | Ttexture2D
