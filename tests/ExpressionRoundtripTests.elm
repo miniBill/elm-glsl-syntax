@@ -72,7 +72,7 @@ fuzzer depth =
                 , Fuzz.map3 Ternary child child child
                 , Fuzz.map2 excludeNonsensicalUnary unaryOperationFuzzer child
                 , Fuzz.map3 excludeNonsensicalBinary child binaryOperationFuzzer child
-                , Fuzz.map2 Call (Fuzz.map Variable variableNameFuzzer) (Fuzz.list child)
+                , Fuzz.map2 Call (Fuzz.map Variable variableNameFuzzer) (Fuzz.listOfLengthBetween 0 3 child)
                 , Fuzz.map2 excludeNonsensicalDot child variableNameFuzzer
                 ]
     in
