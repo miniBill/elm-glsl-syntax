@@ -1,0 +1,27 @@
+{
+    "elmLS.elmFormatPath": "elm-format-hack",
+    "cSpell.words": [
+        "bvec",
+        "darray",
+        "darrayshadow",
+        "dmat",
+        "dmsarray",
+        "drect",
+        "drectshadow",
+        "dshadow",
+        "dvec",
+        "Glsl",
+        "imagebuffer",
+        "imagecube",
+        "imagecubearray",
+        "ivec",
+        "prec",
+        "rect",
+        "samplerbuffer",
+        "samplercube",
+        "samplercubearray",
+        "samplercubearrayshadow",
+        "samplercubeshadow",
+        "uvec"
+    ]
+}

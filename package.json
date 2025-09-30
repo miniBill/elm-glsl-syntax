@@ -1,0 +1,21 @@
+{
+    "devDependencies": {
+        "elm-codegen": "^0.6.1",
+        "elm-format": "^0.8.8",
+        "elm-pages": "^3.0.25",
+        "elm-review": "^2.13.4",
+        "elm-test-rs": "^3.0.1-0"
+    },
+    "license": "BSD-3-Clause",
+    "scripts": {
+        "start": "yarn elm-pages run codegen/src/Generate.elm; elm-format --yes src/Glsl/Functions.elm; sed -i'' -e 's/Vec String/Vec q/g' src/Glsl/Functions.elm; rm -f src/Glsl/Functions.elm-e"
+    },
+    "overrides": {
+        "elm-doc-preview": ">=6.0.0",
+        "cross-spawn": ">=7.0.3"
+    },
+    "resolutions": {
+        "elm-doc-preview": ">=6.0.0",
+        "cross-spawn": ">=7.0.3"
+    }
+}
