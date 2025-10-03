@@ -2,11 +2,13 @@ module ShaderToy exposing (suite)
 
 import ErrorUtils
 import Expect
-import Glsl exposing (BinaryOperation(..), Declaration(..), Expression(..), Statement(..), Type(..), UnaryOperation(..))
+import Glsl exposing (Declaration, Expression(..))
+import Glsl.Node as Node exposing (Node)
 import Glsl.Parser
 import IsAlmostEquals
 import Parser.Advanced
 import Test exposing (Test, describe, test)
+import Utils exposing (add, assign, by, call, const, decl, div, dot, f, float, func, in_, mat2, negate_, out, return, subtract, var, vec2, vec3, vec4, void)
 
 
 suite : Test
@@ -132,7 +134,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord ) {
         [ const float "i3" (f 0.5773502691896258)
         , func vec4 "pick3" [ vec4 "a", vec4 "b", vec4 "c", float "u" ] <|
             [ decl float "v" (call "fract" [ by (var "u") (f (1 / 3)) ])
-            , Return
+            , return
                 (call "mix"
                     [ call "mix" [ var "a", var "b", call "step" [ f 0.3, var "v" ] ]
                     , var "c"
@@ -150,7 +152,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord ) {
                     , call "vec4" [ f 1, f 0, f 0, f 1 ]
                     , add (dot "pi" "x") (dot "pi" "y")
                     ]
-            , Return
+            , return
                 (add
                     (call "mix"
                         [ var "nn"
@@ -167,7 +169,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord ) {
         , const mat2 "tri2cart" <|
             call "mat2" [ f 1, f 0, f -0.5, by (f 0.5) (var "s3") ]
         , func float "hash" [ vec2 "pos" ] <|
-            [ Return (Dot (call "fract" [ div (var "pos") (f 511) ]) "x")
+            [ return (Node.empty (Dot (call "fract" [ div (var "pos") (f 511) ]) (Node.empty "x")))
             ]
         , func vec3 "perpBisector" [ vec2 "p1", vec2 "p2" ] <|
             [ decl vec2 "p21" <| subtract (var "p2") (var "p1")
@@ -183,7 +185,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord ) {
                     , f 1
                     ]
             , decl vec3 "l" <| call "cross" [ var "pa", var "pb" ]
-            , Return
+            , return
                 (by
                     (var "l")
                     (call "inversesqrt"
@@ -224,15 +226,15 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord ) {
             , decl float "st" <| call "sin" [ var "theta" ]
             , assign (var "pos") <|
                 by
-                    (call "mat2" [ var "ct", negate (var "st"), var "st", var "ct" ])
+                    (call "mat2" [ var "ct", negate_ (var "st"), var "st", var "ct" ])
                     (var "pos")
             , decl vec3 "L" <|
-                call "vec3" [ var "i3", negate (var "i3"), var "i3" ]
+                call "vec3" [ var "i3", negate_ (var "i3"), var "i3" ]
             , assign (dot "L" "xy") <|
                 by
                     (call "mat2"
                         [ var "ct"
-                        , negate (var "st")
+                        , negate_ (var "st")
                         , var "st"
                         , var "ct"
                         ]
@@ -337,7 +339,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord ) {
                             (f 1)
                         , add
                             (by
-                                (negate (var "t"))
+                                (negate_ (var "t"))
                                 (var "invb")
                             )
                             (var "invb")
@@ -348,112 +350,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord ) {
         ]
 
 
-const : (String -> ( Type, a )) -> String -> Expression -> Declaration
-const t n v =
-    ConstDeclaration (Tuple.first (t "")) n v
-
-
-decl : (String -> ( Type, a )) -> String -> Expression -> Statement
-decl t n v =
-    Decl (Tuple.first (t "")) n (Just v)
-
-
-func : (String -> ( Type, a )) -> String -> List ( Type, String ) -> List Statement -> Declaration
-func t n a s =
-    FunctionDeclaration (Tuple.first (t "")) n a s
-
-
-void : a -> ( Type, a )
-void s =
-    ( Tvoid, s )
-
-
-float : a -> ( Type, a )
-float s =
-    ( Tfloat, s )
-
-
-vec2 : a -> ( Type, a )
-vec2 s =
-    ( Tvec2, s )
-
-
-vec3 : a -> ( Type, a )
-vec3 s =
-    ( Tvec3, s )
-
-
-vec4 : a -> ( Type, a )
-vec4 s =
-    ( Tvec4, s )
-
-
-mat2 : a -> ( Type, a )
-mat2 s =
-    ( Tmat2, s )
-
-
-in_ : (String -> ( Type, a )) -> a -> ( Type, a )
-in_ t n =
-    ( Tin (Tuple.first (t "")), n )
-
-
-out : (String -> ( Type, a )) -> a -> ( Type, a )
-out t n =
-    ( Tout (Tuple.first (t "")), n )
-
-
-var : String -> Expression
-var =
-    Variable
-
-
-f : Float -> Expression
-f =
-    Float
-
-
-negate : Expression -> Expression
-negate =
-    UnaryOperation Negate
-
-
-add : Expression -> Expression -> Expression
-add l r =
-    BinaryOperation l Add r
-
-
-subtract : Expression -> Expression -> Expression
-subtract l r =
-    BinaryOperation l Subtract r
-
-
-by : Expression -> Expression -> Expression
-by l r =
-    BinaryOperation l By r
-
-
-div : Expression -> Expression -> Expression
-div l r =
-    BinaryOperation l Div r
-
-
-assign : Expression -> Expression -> Statement
-assign l r =
-    ExpressionStatement (BinaryOperation l Assign r)
-
-
-dot : String -> String -> Expression
-dot v =
-    Dot (Variable v)
-
-
-call : String -> List Expression -> Expression
-call v =
-    Call (Variable v)
-
-
-check : String -> String -> List Declaration -> Test
+check : String -> String -> List (Node Declaration) -> Test
 check label input expected =
     test label <| \_ ->
     case Parser.Advanced.run Glsl.Parser.file input of

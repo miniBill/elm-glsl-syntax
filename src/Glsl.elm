@@ -13,12 +13,14 @@ module Glsl exposing
 
 -}
 
+import Glsl.Node exposing (Node)
+
 
 {-| -}
 type Declaration
-    = FunctionDeclaration Type String (List ( Type, String )) (List Statement)
-    | UniformDeclaration Type String
-    | ConstDeclaration Type String Expression
+    = FunctionDeclaration (Node Type) (Node String) (Node (List ( Node Type, Node String ))) (List (Node Statement))
+    | UniformDeclaration (Node Type) (Node String)
+    | ConstDeclaration (Node Type) (Node String) (Node Expression)
 
 
 type Expression
@@ -26,11 +28,12 @@ type Expression
     | Int Int
     | Float Float
     | Variable String
-    | Ternary Expression Expression Expression
-    | UnaryOperation UnaryOperation Expression
-    | BinaryOperation Expression BinaryOperation Expression
-    | Call Expression (List Expression)
-    | Dot Expression String
+    | Ternary (Node Expression) (Node Expression) (Node Expression)
+    | UnaryOperation (Node UnaryOperation) (Node Expression)
+    | BinaryOperation (Node Expression) (Node BinaryOperation) (Node Expression)
+    | Call (Node Expression) (Node (List (Node Expression)))
+    | Dot (Node Expression) (Node String)
+    | Parens (Node Expression)
 
 
 type BinaryOperation
@@ -105,16 +108,15 @@ type UnaryOperation
 
 
 type Statement
-    = If Expression Statement
-    | IfElse Expression Statement Statement
-    | For (Maybe Statement) Expression Expression Statement
-    | Return Expression
+    = If (Node Expression) (Node Statement)
+    | IfElse (Node Expression) (Node Statement) (Node Statement)
+    | For (Maybe (Node Statement)) (Node Expression) (Node Expression) (Node Statement)
+    | Return (Node Expression)
     | Break
     | Continue
-    | ExpressionStatement Expression
-    | Decl Type String (Maybe Expression)
-    | Nop
-    | Block (List Statement)
+    | ExpressionStatement (Node Expression)
+    | Decl (Node Type) (Node String) (Maybe (Node Expression))
+    | Block (List (Node Statement))
 
 
 type Type
@@ -197,8 +199,8 @@ type Type
     | Tusampler2DMS
     | Tusampler2DMSArray
       -- in/on
-    | Tin Type
-    | Tout Type
+    | Tin (Node Type)
+    | Tout (Node Type)
       --
       -- GLSL 4.60
       -- double

@@ -1,9 +1,10 @@
 module Glsl.Parser exposing (Context(..), DeadEnd, Parser, expression, file, function, statement)
 
 import Glsl exposing (BinaryOperation(..), Declaration(..), Expression(..), RelationOperation(..), Statement(..), Type(..), UnaryOperation(..))
+import Glsl.Node as Node exposing (Node(..))
 import Parser exposing (Problem(..))
 import Parser.Advanced exposing ((|.), (|=), Step(..), Trailing(..))
-import ParserWithContext exposing (chompIf, chompWhile, end, float, getChompedString, inContext, int, keyword, loop, many, oneOf, sequence, spaces, succeed, symbol)
+import ParserWithContext exposing (chompIf, chompWhile, end, float, getChompedString, inContext, int, keyword, location, loop, many, node, oneOf, sequence, spaces, succeed, symbol)
 
 
 type Context
@@ -29,7 +30,7 @@ type alias DeadEnd =
     }
 
 
-file : Parser ( Maybe { version : Int }, List Declaration )
+file : Parser ( Maybe { version : Int }, List (Node Declaration) )
 file =
     succeed Tuple.pair
         |. spaces
@@ -45,6 +46,7 @@ file =
                 , uniform
                 , function
                 ]
+                |> node
             )
         |. end
         |> inContext ParsingFile
@@ -54,14 +56,16 @@ function : Parser Declaration
 function =
     succeed FunctionDeclaration
         |= typeParser
-        |= identifierParser
-        |= sequence
-            { start = "("
-            , end = ")"
-            , separator = ","
-            , item = argParser
-            , trailing = Forbidden
-            }
+        |= node identifierParser
+        |= node
+            (sequence
+                { start = "("
+                , end = ")"
+                , separator = ","
+                , item = argParser
+                , trailing = Forbidden
+                }
+            )
         |= sequence
             { start = "{"
             , item = statement
@@ -77,7 +81,7 @@ const =
     succeed ConstDeclaration
         |. keyword "const"
         |= typeParser
-        |= identifierParser
+        |= node identifierParser
         |. symbol "="
         |= expression
         |. symbol ";"
@@ -88,15 +92,15 @@ uniform =
     succeed UniformDeclaration
         |. keyword "uniform"
         |= typeParser
-        |= identifierParser
+        |= node identifierParser
         |. symbol ";"
 
 
-argParser : Parser ( Type, String )
+argParser : Parser ( Node Type, Node String )
 argParser =
     succeed Tuple.pair
         |= typeParser
-        |= identifierParser
+        |= node identifierParser
 
 
 identifierParser : Parser String
@@ -109,14 +113,15 @@ identifierParser =
         |. spaces
 
 
-typeParser : Parser Type
+typeParser : Parser (Node Type)
 typeParser =
     let
-        baseParser : Parser Type
+        baseParser : Parser (Node Type)
         baseParser =
             types
                 |> List.map (\( s, t ) -> succeed t |. keyword s)
                 |> oneOf
+                |> node
     in
     succeed identity
         |. oneOf
@@ -127,9 +132,11 @@ typeParser =
             [ succeed Tout
                 |. keyword "out"
                 |= baseParser
+                |> node
             , succeed Tin
                 |. keyword "in"
                 |= baseParser
+                |> node
             , baseParser
             ]
 
@@ -213,7 +220,7 @@ types =
     ]
 
 
-statement : Parser Statement
+statement : Parser (Node Statement)
 statement =
     (ParserWithContext.lazy <| \_ ->
     oneOf
@@ -226,6 +233,7 @@ statement =
         , expressionStatementParser
         ]
     )
+        |> node
         |> inContext ParsingStatement
 
 
@@ -309,7 +317,7 @@ defParser =
             Decl type_ var val
         )
         |= typeParser
-        |= identifierParser
+        |= node identifierParser
         |= oneOf
             [ succeed Just
                 |. symbol "="
@@ -319,132 +327,110 @@ defParser =
         |. symbol ";"
 
 
-expression : Parser Expression
+expression : Parser (Node Expression)
 expression =
     prec17Parser
         |> inContext ParsingExpression
 
 
-prec17Parser : Parser Expression
+prec17Parser : Parser (Node Expression)
 prec17Parser =
     multiSequenceAssocLeft
-        { separators = [ ( \l r -> BinaryOperation l Comma r, symbol "," ) ]
+        { separators = [ ( Comma, symbol "," ) ]
         , item = prec16Parser
         }
 
 
-prec16Parser : Parser Expression
+prec16Parser : Parser (Node Expression)
 prec16Parser =
-    succeed (\a f -> f a)
-        |= prec15Parser
-        |= oneOf
-            [ succeed (\r l -> BinaryOperation l Assign r)
-                |. singleSymbol "="
-                |= ParserWithContext.lazy (\_ -> prec16Parser)
-            , succeed (\r l -> BinaryOperation l ComboAdd r)
-                |. symbol "+="
-                |= ParserWithContext.lazy (\_ -> prec16Parser)
-            , succeed (\r l -> BinaryOperation l ComboSubtract r)
-                |. symbol "-="
-                |= ParserWithContext.lazy (\_ -> prec16Parser)
-            , succeed (\r l -> BinaryOperation l ComboBy r)
-                |. symbol "*="
-                |= ParserWithContext.lazy (\_ -> prec16Parser)
-            , succeed (\r l -> BinaryOperation l ComboDiv r)
-                |. symbol "/="
-                |= ParserWithContext.lazy (\_ -> prec16Parser)
-            , succeed (\r l -> BinaryOperation l ComboMod r)
-                |. symbol "%="
-                |= ParserWithContext.lazy (\_ -> prec16Parser)
-            , succeed (\r l -> BinaryOperation l ComboLeftShift r)
-                |. symbol "<<="
-                |= ParserWithContext.lazy (\_ -> prec16Parser)
-            , succeed (\r l -> BinaryOperation l ComboRightShift r)
-                |. symbol ">>="
-                |= ParserWithContext.lazy (\_ -> prec16Parser)
-            , succeed (\r l -> BinaryOperation l ComboBitwiseAnd r)
-                |. symbol "&="
-                |= ParserWithContext.lazy (\_ -> prec16Parser)
-            , succeed (\r l -> BinaryOperation l ComboBitwiseOr r)
-                |. symbol "|="
-                |= ParserWithContext.lazy (\_ -> prec16Parser)
-            , succeed (\r l -> BinaryOperation l ComboBitwiseXor r)
-                |. symbol "^="
-                |= ParserWithContext.lazy (\_ -> prec16Parser)
-            , succeed identity
-            ]
+    prec15Parser
+        |> ParserWithContext.andThen
+            (\l ->
+                oneOf
+                    [ succeed (BinaryOperation l)
+                        |= node
+                            (oneOf
+                                [ succeed Assign |. singleSymbol "="
+                                , succeed ComboAdd |. symbol "+="
+                                , succeed ComboSubtract |. symbol "-="
+                                , succeed ComboBy |. symbol "*="
+                                , succeed ComboDiv |. symbol "/="
+                                , succeed ComboMod |. symbol "%="
+                                , succeed ComboLeftShift |. symbol "<<="
+                                , succeed ComboRightShift |. symbol ">>="
+                                , succeed ComboBitwiseAnd |. symbol "&="
+                                , succeed ComboBitwiseOr |. symbol "|="
+                                , succeed ComboBitwiseXor |. symbol "^="
+                                ]
+                            )
+                        |= ParserWithContext.lazy (\_ -> prec16Parser)
+                        |> node
+                    , succeed l
+                    ]
+            )
 
 
-prec15Parser : Parser Expression
+prec15Parser : Parser (Node Expression)
 prec15Parser =
-    succeed (\k f -> f k)
-        |= prec14Parser
-        |= oneOf
-            [ succeed (\t f c -> Ternary c t f)
-                -- c is passed in last in the lambda because it's passed
-                -- from above
-                |. symbol "?"
-                |= prec14Parser
-                |. symbol ":"
-                |= ParserWithContext.lazy (\_ -> prec15Parser)
-            , succeed identity
-            ]
+    prec14Parser
+        |> ParserWithContext.andThen
+            (\c ->
+                oneOf
+                    [ succeed (Ternary c)
+                        |. symbol "?"
+                        |= prec14Parser
+                        |. symbol ":"
+                        |= ParserWithContext.lazy (\_ -> prec15Parser)
+                        |> node
+                    , succeed c
+                    ]
+            )
 
 
-prec14Parser : Parser Expression
+prec14Parser : Parser (Node Expression)
 prec14Parser =
     multiSequenceAssocLeft
-        { separators =
-            [ ( \l r -> BinaryOperation l Or r, symbol "||" )
-            ]
+        { separators = [ ( Or, symbol "||" ) ]
         , item = prec13Parser
         }
 
 
-prec13Parser : Parser Expression
+prec13Parser : Parser (Node Expression)
 prec13Parser =
     multiSequenceAssocLeft
-        { separators =
-            [ ( \l r -> BinaryOperation l Xor r, symbol "^^" )
-            ]
+        { separators = [ ( Xor, symbol "^^" ) ]
         , item = prec12Parser
         }
 
 
-prec12Parser : Parser Expression
+prec12Parser : Parser (Node Expression)
 prec12Parser =
     multiSequenceAssocLeft
-        { separators =
-            [ ( \l r -> BinaryOperation l And r, symbol "&&" )
-            ]
+        { separators = [ ( And, symbol "&&" ) ]
         , item = prec11Parser
         }
 
 
-prec11Parser : Parser Expression
+prec11Parser : Parser (Node Expression)
 prec11Parser =
     multiSequenceAssocLeft
-        { separators =
-            [ ( \l r -> BinaryOperation l BitwiseOr r, singleSymbol "|" )
-            ]
+        { separators = [ ( BitwiseOr, singleSymbol "|" ) ]
         , item = prec10Parser
         }
 
 
-prec10Parser : Parser Expression
+prec10Parser : Parser (Node Expression)
 prec10Parser =
     multiSequenceAssocLeft
-        { separators =
-            [ ( \l r -> BinaryOperation l BitwiseXor r, singleSymbol "^" )
-            ]
+        { separators = [ ( BitwiseXor, singleSymbol "^" ) ]
         , item = prec9Parser
         }
 
 
-prec9Parser : Parser Expression
+prec9Parser : Parser (Node Expression)
 prec9Parser =
     multiSequenceAssocLeft
-        { separators = [ ( \l r -> BinaryOperation l BitwiseAnd r, singleSymbol "&" ) ]
+        { separators = [ ( BitwiseAnd, singleSymbol "&" ) ]
         , item = prec8Parser
         }
 
@@ -467,79 +453,82 @@ symbolNotFollowedBy s nots =
             ]
 
 
-prec8Parser : Parser Expression
+prec8Parser : Parser (Node Expression)
 prec8Parser =
     multiSequenceAssocLeft
         { separators =
-            [ ( \l r -> BinaryOperation l (RelationOperation Equals) r, symbol "==" )
-            , ( \l r -> BinaryOperation l (RelationOperation NotEquals) r, symbol "!=" )
+            [ ( RelationOperation Equals, symbol "==" )
+            , ( RelationOperation NotEquals, symbol "!=" )
             ]
         , item = prec7Parser
         }
 
 
-prec7Parser : Parser Expression
+prec7Parser : Parser (Node Expression)
 prec7Parser =
     multiSequenceAssocLeft
         { separators =
-            [ ( \l r -> BinaryOperation l (RelationOperation LessThanOrEquals) r, symbol "<=" )
-            , ( \l r -> BinaryOperation l (RelationOperation GreaterThanOrEquals) r, symbol ">=" )
-            , ( \l r -> BinaryOperation l (RelationOperation LessThan) r, symbolNotFollowedBy "<" [ "<=" ] )
-            , ( \l r -> BinaryOperation l (RelationOperation GreaterThan) r, symbolNotFollowedBy ">" [ ">=" ] )
+            [ ( RelationOperation LessThanOrEquals, symbol "<=" )
+            , ( RelationOperation GreaterThanOrEquals, symbol ">=" )
+            , ( RelationOperation LessThan, symbolNotFollowedBy "<" [ "<=" ] )
+            , ( RelationOperation GreaterThan, symbolNotFollowedBy ">" [ ">=" ] )
             ]
         , item = prec6Parser
         }
 
 
-prec6Parser : Parser Expression
+prec6Parser : Parser (Node Expression)
 prec6Parser =
     multiSequenceAssocLeft
         { separators =
-            [ ( \l r -> BinaryOperation l ShiftLeft r, symbolNotFollowedBy "<<" [ "=" ] )
-            , ( \l r -> BinaryOperation l ShiftRight r, symbolNotFollowedBy ">>" [ "=" ] )
+            [ ( ShiftLeft, symbolNotFollowedBy "<<" [ "=" ] )
+            , ( ShiftRight, symbolNotFollowedBy ">>" [ "=" ] )
             ]
         , item = prec5Parser
         }
 
 
-prec5Parser : Parser Expression
+prec5Parser : Parser (Node Expression)
 prec5Parser =
     multiSequenceAssocLeft
         { separators =
-            [ ( \l r -> BinaryOperation l Add r, symbolNotFollowedBy "+" [ "=" ] )
-            , ( \l r -> BinaryOperation l Subtract r, symbolNotFollowedBy "-" [ "=" ] )
+            [ ( Add, symbolNotFollowedBy "+" [ "=" ] )
+            , ( Subtract, symbolNotFollowedBy "-" [ "=" ] )
             ]
         , item = prec4Parser
         }
 
 
-prec4Parser : Parser Expression
+prec4Parser : Parser (Node Expression)
 prec4Parser =
     multiSequenceAssocLeft
         { separators =
-            [ ( \l r -> BinaryOperation l By r, symbolNotFollowedBy "*" [ "=" ] )
-            , ( \l r -> BinaryOperation l Div r, symbolNotFollowedBy "/" [ "=" ] )
-            , ( \l r -> BinaryOperation l Mod r, symbolNotFollowedBy "%" [ "=" ] )
+            [ ( By, symbolNotFollowedBy "*" [ "=" ] )
+            , ( Div, symbolNotFollowedBy "/" [ "=" ] )
+            , ( Mod, symbolNotFollowedBy "%" [ "=" ] )
             ]
         , item = prec3Parser
         }
 
 
-prec3Parser : Parser Expression
+prec3Parser : Parser (Node Expression)
 prec3Parser =
     oneOf
-        [ succeed (UnaryOperation PrefixIncrement)
-            |. symbol "++"
+        [ succeed UnaryOperation
+            |= node (succeed PrefixIncrement |. symbol "++")
             |= ParserWithContext.lazy (\_ -> prec3Parser)
-        , succeed (UnaryOperation Plus)
-            |. singleSymbol "+"
+            |> node
+        , succeed UnaryOperation
+            |= node (succeed Plus |. singleSymbol "+")
             |= ParserWithContext.lazy (\_ -> prec3Parser)
-        , succeed (UnaryOperation PrefixDecrement)
-            |. symbol "--"
+            |> node
+        , succeed UnaryOperation
+            |= node (succeed PrefixDecrement |. symbol "--")
             |= ParserWithContext.lazy (\_ -> prec3Parser)
+            |> node
         , succeed
-            (\c ->
-                case c of
+            (\op c ->
+                case Node.value c of
                     Float f ->
                         Float -f
 
@@ -547,77 +536,101 @@ prec3Parser =
                         Int -i
 
                     _ ->
-                        UnaryOperation Negate c
+                        UnaryOperation op c
             )
-            |. singleSymbol "-"
+            |= node (succeed Negate |. singleSymbol "-")
             |= ParserWithContext.lazy (\_ -> prec3Parser)
-        , succeed (UnaryOperation Invert)
-            |. symbol "~"
+            |> node
+        , succeed UnaryOperation
+            |= node (succeed Invert |. symbol "~")
             |= ParserWithContext.lazy (\_ -> prec3Parser)
-        , succeed (UnaryOperation Not)
-            |. symbol "!"
+            |> node
+        , succeed UnaryOperation
+            |= node (succeed Not |. symbol "!")
             |= ParserWithContext.lazy (\_ -> prec3Parser)
+            |> node
         , prec2Parser
         ]
 
 
-prec2Parser : Parser Expression
+prec2Parser : Parser (Node Expression)
 prec2Parser =
-    succeed (\a f -> f a)
-        |= prec1Parser
-        |= ParserWithContext.lazy prec2Suffixes
+    prec1Parser
+        |> ParserWithContext.andThen
+            (\a ->
+                succeed (\f -> f a)
+                    |= ParserWithContext.lazy (\_ -> prec2Suffixes)
+            )
 
 
-prec2Suffixes : () -> Parser (Expression -> Expression)
-prec2Suffixes () =
+prec2Suffixes : Parser (Node Expression -> Node Expression)
+prec2Suffixes =
     oneOf
-        [ succeed (\args k v -> k (Call v args))
-            |= sequence
-                { start = "("
-                , separator = ","
-                , item = ParserWithContext.lazy <| \_ -> prec16Parser
-                , end = ")"
-                , trailing = Forbidden
-                }
+        [ succeed (\args k v -> k (Node.combine Call v args))
+            |= (sequence
+                    { start = "("
+                    , separator = ","
+                    , item = ParserWithContext.lazy <| \_ -> prec16Parser
+                    , end = ")"
+                    , trailing = Forbidden
+                    }
+                    |> node
+               )
             |= oneOf
-                [ ParserWithContext.lazy <| \_ -> prec2Suffixes ()
+                [ ParserWithContext.lazy <| \_ -> prec2Suffixes
                 , succeed identity
                 ]
-        , succeed (\arg k v -> k (BinaryOperation v ArraySubscript arg))
+        , succeed
+            (\start arg end k v ->
+                k
+                    (Node.combine3
+                        BinaryOperation
+                        v
+                        (Node
+                            { start = start
+                            , end = end
+                            }
+                            ArraySubscript
+                        )
+                        arg
+                    )
+            )
+            |= location
             |. symbol "["
             |= ParserWithContext.lazy (\_ -> prec16Parser)
             |. symbol "]"
+            |= location
             |= oneOf
-                [ ParserWithContext.lazy <| \_ -> prec2Suffixes ()
+                [ ParserWithContext.lazy <| \_ -> prec2Suffixes
                 , succeed identity
                 ]
-        , succeed (\p k v -> k (Dot v p))
+        , succeed (\p k v -> k (Node.combine Dot v p))
             |. symbol "."
-            |= identifierParser
+            |= node identifierParser
             |= oneOf
-                [ ParserWithContext.lazy <| \_ -> prec2Suffixes ()
+                [ ParserWithContext.lazy <| \_ -> prec2Suffixes
                 , succeed identity
                 ]
-        , succeed (\k v -> k (UnaryOperation PostfixIncrement v))
-            |. symbol "++"
+        , succeed (\op k v -> k (Node.combine UnaryOperation op v))
+            |= node (succeed PostfixIncrement |. symbol "++")
             |= oneOf
-                [ ParserWithContext.lazy <| \_ -> prec2Suffixes ()
+                [ ParserWithContext.lazy <| \_ -> prec2Suffixes
                 , succeed identity
                 ]
-        , succeed (\k v -> k (UnaryOperation PostfixDecrement v))
-            |. symbol "--"
+        , succeed (\op k v -> k (Node.combine UnaryOperation op v))
+            |= node (succeed PostfixDecrement |. symbol "--")
             |= oneOf
-                [ ParserWithContext.lazy <| \_ -> prec2Suffixes ()
+                [ ParserWithContext.lazy <| \_ -> prec2Suffixes
                 , succeed identity
                 ]
         , succeed identity
         ]
 
 
-prec1Parser : Parser Expression
+prec1Parser : Parser (Node Expression)
 prec1Parser =
     oneOf
-        [ succeed identity
+        [ succeed Parens
             |. symbol "("
             |= ParserWithContext.lazy (\_ -> expression)
             |. symbol ")"
@@ -627,18 +640,21 @@ prec1Parser =
             |. keyword "false"
         , succeed Variable
             |= identifierParser
-        , succeed Float |= float
-        , succeed Int |= int
+        , succeed Float
+            |= float
+        , succeed Int
+            |= int
         ]
+        |> node
 
 
 type alias SequenceData =
-    { separators : List ( Expression -> Expression -> Expression, Parser () )
-    , item : Parser Expression
+    { separators : List ( BinaryOperation, Parser () )
+    , item : Parser (Node Expression)
     }
 
 
-multiSequenceAssocLeft : SequenceData -> Parser Expression
+multiSequenceAssocLeft : SequenceData -> Parser (Node Expression)
 multiSequenceAssocLeft data =
     succeed identity
         |= data.item
@@ -650,18 +666,20 @@ multiSequenceAssocLeft data =
 
 multiSequenceHelpLeft :
     SequenceData
-    -> Expression
-    -> Parser (Step Expression Expression)
+    -> Node Expression
+    -> Parser (Step (Node Expression) (Node Expression))
 multiSequenceHelpLeft { separators, item } acc =
     let
-        separated : Parser (Step Expression a)
+        separated : Parser (Step (Node Expression) a)
         separated =
             separators
                 |> List.map
                     (\( f, parser ) ->
-                        succeed (\e -> Loop <| f acc e)
-                            |. parser
+                        succeed (\op e -> BinaryOperation acc op e)
+                            |= node (succeed f |. parser)
                             |= item
+                            |> node
+                            |> ParserWithContext.map Loop
                     )
                 |> oneOf
     in

@@ -1,80 +1,96 @@
-module Glsl.Simplify exposing (expr, stat)
+module Glsl.Simplify exposing (expression, statement)
 
 import Glsl exposing (Expression(..), Statement(..), UnaryOperation(..))
+import Glsl.Node as Node exposing (Node(..))
 
 
-stat : Statement -> Statement
-stat root =
-    case root of
-        Return e ->
-            Return (expr e)
-
-        ExpressionStatement e ->
-            ExpressionStatement (expr e)
-
-        If e s1 ->
-            If (expr e) (stat s1)
-
-        IfElse e s1 s2 ->
-            IfElse (expr e) (stat s1) (stat s2)
-
-        Decl tipe name val ->
-            Decl tipe name (Maybe.map expr val)
-
-        For init check step loop ->
-            For (Maybe.map stat init) (expr check) (expr step) (stat loop)
-
-        Block [] ->
-            Nop
-
-        Block [ s ] ->
-            stat s
-
-        Block children ->
-            Block (List.map stat children)
-
-        Nop ->
-            Nop
-
-        Break ->
-            Break
-
-        Continue ->
-            Continue
+node : (a -> b) -> Node a -> Node b
+node f n =
+    Node.map f n
 
 
-expr : Expression -> Expression
-expr root =
-    case root of
-        Ternary c t f ->
-            Ternary (expr c) (expr t) (expr f)
+statement : Node Statement -> Node Statement
+statement =
+    Node.map
+        (\root ->
+            case root of
+                Return e ->
+                    Return (expression e)
 
-        Dot l r ->
-            Dot (expr l) r
+                ExpressionStatement e ->
+                    ExpressionStatement (expression e)
 
-        BinaryOperation l op r ->
-            BinaryOperation (expr l) op (expr r)
+                If e s1 ->
+                    If (expression e) (statement s1)
 
-        UnaryOperation Negate (Int i) ->
-            Int -i
+                IfElse e s1 s2 ->
+                    IfElse (expression e) (statement s1) (statement s2)
 
-        UnaryOperation Negate (Float f) ->
-            Float -f
+                Decl tipe name val ->
+                    Decl tipe name (Maybe.map expression val)
 
-        UnaryOperation op l ->
-            UnaryOperation op (expr l)
+                For init check step loop ->
+                    For
+                        (Maybe.map statement init)
+                        (expression check)
+                        (expression step)
+                        (statement loop)
 
-        Call l r ->
-            Call (expr l) (List.map expr r)
+                Block children ->
+                    Block (List.map statement children)
 
-        Bool _ ->
-            root
+                Break ->
+                    Break
 
-        Int _ ->
-            root
+                Continue ->
+                    Continue
+        )
 
-        Float _ ->
-            root
 
-        Variable _ ->
-            root
+expression : Node Expression -> Node Expression
+expression =
+    Node.map
+        (\root ->
+            case root of
+                Ternary c t f ->
+                    Ternary (expression c) (expression t) (expression f)
+
+                Dot l r ->
+                    Dot (expression l) r
+
+                BinaryOperation l op r ->
+                    BinaryOperation (expression l) op (expression r)
+
+                UnaryOperation (Node _ Plus) (Node _ (Int i)) ->
+                    Int i
+
+                UnaryOperation (Node _ Plus) (Node _ (Float f)) ->
+                    Float f
+
+                UnaryOperation (Node _ Negate) (Node _ (Int i)) ->
+                    Int -i
+
+                UnaryOperation (Node _ Negate) (Node _ (Float f)) ->
+                    Float -f
+
+                UnaryOperation op l ->
+                    UnaryOperation op (expression l)
+
+                Call l r ->
+                    Call (expression l) (node (List.map expression) r)
+
+                Bool _ ->
+                    root
+
+                Int _ ->
+                    root
+
+                Float _ ->
+                    root
+
+                Variable _ ->
+                    root
+
+                Parens c ->
+                    Parens (expression c)
+        )

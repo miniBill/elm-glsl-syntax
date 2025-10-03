@@ -1,12 +1,13 @@
 module Glsl.PrettyPrinter exposing (binaryOperation, declaration, expr, float, stat, type_, unaryOperation)
 
 import Glsl exposing (BinaryOperation(..), Declaration(..), Expression(..), RelationOperation(..), Statement(..), Type(..), UnaryOperation(..))
+import Glsl.Node as Node exposing (Node(..))
 
 
-stat : Int -> Statement -> String
-stat i c =
+stat : Int -> Node Statement -> String
+stat i (Node _ c) =
     case c of
-        Nop ->
+        Block [] ->
             "{}"
 
         Block children ->
@@ -19,14 +20,14 @@ stat i c =
         If cond t ->
             indent i ("if (" ++ expr cond ++ ") ") ++ String.trimLeft (stat (i + 1) t)
 
-        IfElse cond t ((If _ _) as f) ->
+        IfElse cond t ((Node _ (If _ _)) as f) ->
             [ indent i ("if (" ++ expr cond ++ ") {")
             , stat (i + 1) t
             , indent i <| "} else " ++ String.trimLeft (stat i f)
             ]
                 |> String.join "\n"
 
-        IfElse cond t ((IfElse _ _ _) as f) ->
+        IfElse cond t ((Node _ (IfElse _ _ _)) as f) ->
             [ indent i ("if (" ++ expr cond ++ ") {")
             , stat (i + 1) t
             , indent i "} else {"
@@ -73,10 +74,10 @@ stat i c =
         ExpressionStatement e ->
             indent i (expr e ++ ";")
 
-        Decl t n (Just e) ->
+        Decl t (Node _ n) (Just e) ->
             indent i (type_ t ++ " " ++ n ++ " = " ++ expr e ++ ";")
 
-        Decl t n Nothing ->
+        Decl t (Node _ n) Nothing ->
             indent i (type_ t ++ " " ++ n ++ ";")
 
 
@@ -85,7 +86,7 @@ indent i line =
     String.repeat (4 * i) " " ++ line
 
 
-expr : Expression -> String
+expr : Node Expression -> String
 expr root =
     let
         showParen : Bool -> String -> String
@@ -96,16 +97,16 @@ expr root =
             else
                 e
 
-        infixl_ : Int -> Int -> Expression -> String -> Expression -> String
+        infixl_ : Int -> Int -> Node Expression -> String -> Node Expression -> String
         infixl_ n p l op r =
             showParen (p > n) (go n l ++ " " ++ op ++ " " ++ go (n + 1) r)
 
-        infixr_ : Int -> Int -> Expression -> String -> Expression -> String
+        infixr_ : Int -> Int -> Node Expression -> String -> Node Expression -> String
         infixr_ n p l op r =
             showParen (p > n) (go (n + 1) l ++ " " ++ op ++ " " ++ go n r)
 
-        go : Int -> Expression -> String
-        go p tree =
+        go : Int -> Node Expression -> String
+        go p (Node _ tree) =
             case tree of
                 Bool b ->
                     if b then
@@ -123,134 +124,137 @@ expr root =
                 Variable v ->
                     v
 
-                BinaryOperation l ArraySubscript r ->
+                BinaryOperation l (Node _ ArraySubscript) r ->
                     showParen (p > 15) (go 15 l ++ "[" ++ go 16 r ++ "]")
 
-                Call l r ->
+                Call l (Node _ r) ->
                     showParen (p > 15) (go 15 l ++ "(" ++ String.join ", " (List.map (go 16) r) ++ ")")
 
-                Dot l r ->
+                Dot l (Node _ r) ->
                     showParen (p > 15) (go 15 l ++ "." ++ r)
 
-                UnaryOperation PostfixIncrement r ->
+                UnaryOperation (Node _ PostfixIncrement) r ->
                     showParen (p > 15) (go 16 r ++ "++")
 
-                UnaryOperation PostfixDecrement r ->
+                UnaryOperation (Node _ PostfixDecrement) r ->
                     showParen (p > 15) (go 16 r ++ "--")
 
-                UnaryOperation PrefixIncrement r ->
+                UnaryOperation (Node _ PrefixIncrement) r ->
                     showParen (p > 14) ("++" ++ go 15 r)
 
-                UnaryOperation PrefixDecrement r ->
+                UnaryOperation (Node _ PrefixDecrement) r ->
                     showParen (p > 14) ("--" ++ go 15 r)
 
-                UnaryOperation Plus r ->
+                UnaryOperation (Node _ Plus) r ->
                     showParen (p > 14) ("+" ++ go 15 r)
 
-                UnaryOperation Negate r ->
+                UnaryOperation (Node _ Negate) r ->
                     showParen (p > 14) ("-" ++ go 15 r)
 
-                UnaryOperation Invert r ->
+                UnaryOperation (Node _ Invert) r ->
                     showParen (p > 14) ("~" ++ go 15 r)
 
-                UnaryOperation Not r ->
+                UnaryOperation (Node _ Not) r ->
                     showParen (p > 14) ("!" ++ go 15 r)
 
-                BinaryOperation l By r ->
+                BinaryOperation l (Node _ By) r ->
                     infixl_ 13 p l "*" r
 
-                BinaryOperation l Div r ->
+                BinaryOperation l (Node _ Div) r ->
                     infixl_ 13 p l "/" r
 
-                BinaryOperation l Mod r ->
+                BinaryOperation l (Node _ Mod) r ->
                     infixl_ 13 p l "%" r
 
-                BinaryOperation l Add r ->
+                BinaryOperation l (Node _ Add) r ->
                     infixl_ 12 p l "+" r
 
-                BinaryOperation l Subtract r ->
+                BinaryOperation l (Node _ Subtract) r ->
                     infixl_ 12 p l "-" r
 
-                BinaryOperation l ShiftLeft r ->
+                BinaryOperation l (Node _ ShiftLeft) r ->
                     infixl_ 11 p l "<<" r
 
-                BinaryOperation l ShiftRight r ->
+                BinaryOperation l (Node _ ShiftRight) r ->
                     infixl_ 11 p l ">>" r
 
-                BinaryOperation l (RelationOperation LessThan) r ->
+                BinaryOperation l (Node _ (RelationOperation LessThan)) r ->
                     infixl_ 10 p l "<" r
 
-                BinaryOperation l (RelationOperation LessThanOrEquals) r ->
+                BinaryOperation l (Node _ (RelationOperation LessThanOrEquals)) r ->
                     infixl_ 10 p l "<=" r
 
-                BinaryOperation l (RelationOperation GreaterThan) r ->
+                BinaryOperation l (Node _ (RelationOperation GreaterThan)) r ->
                     infixl_ 10 p l ">" r
 
-                BinaryOperation l (RelationOperation GreaterThanOrEquals) r ->
+                BinaryOperation l (Node _ (RelationOperation GreaterThanOrEquals)) r ->
                     infixl_ 10 p l ">=" r
 
-                BinaryOperation l (RelationOperation Equals) r ->
+                BinaryOperation l (Node _ (RelationOperation Equals)) r ->
                     infixl_ 9 p l "==" r
 
-                BinaryOperation l (RelationOperation NotEquals) r ->
+                BinaryOperation l (Node _ (RelationOperation NotEquals)) r ->
                     infixl_ 9 p l "!=" r
 
-                BinaryOperation l BitwiseAnd r ->
+                BinaryOperation l (Node _ BitwiseAnd) r ->
                     infixl_ 8 p l "&" r
 
-                BinaryOperation l BitwiseXor r ->
+                BinaryOperation l (Node _ BitwiseXor) r ->
                     infixl_ 7 p l "^" r
 
-                BinaryOperation l BitwiseOr r ->
+                BinaryOperation l (Node _ BitwiseOr) r ->
                     infixl_ 6 p l "|" r
 
-                BinaryOperation l And r ->
+                BinaryOperation l (Node _ And) r ->
                     infixl_ 5 p l "&&" r
 
-                BinaryOperation l Xor r ->
+                BinaryOperation l (Node _ Xor) r ->
                     infixl_ 4 p l "^^" r
 
-                BinaryOperation l Or r ->
+                BinaryOperation l (Node _ Or) r ->
                     infixl_ 3 p l "||" r
 
                 Ternary c t f ->
                     showParen (p > 2) (go 3 c ++ " ? " ++ go 3 t ++ " : " ++ go 2 f)
 
-                BinaryOperation l Assign r ->
+                BinaryOperation l (Node _ Assign) r ->
                     infixr_ 1 p l "=" r
 
-                BinaryOperation l ComboAdd r ->
+                BinaryOperation l (Node _ ComboAdd) r ->
                     infixr_ 1 p l "+=" r
 
-                BinaryOperation l ComboSubtract r ->
+                BinaryOperation l (Node _ ComboSubtract) r ->
                     infixr_ 1 p l "-=" r
 
-                BinaryOperation l ComboBy r ->
+                BinaryOperation l (Node _ ComboBy) r ->
                     infixr_ 1 p l "*=" r
 
-                BinaryOperation l ComboDiv r ->
+                BinaryOperation l (Node _ ComboDiv) r ->
                     infixr_ 1 p l "/=" r
 
-                BinaryOperation l ComboMod r ->
+                BinaryOperation l (Node _ ComboMod) r ->
                     infixr_ 1 p l "%=" r
 
-                BinaryOperation l ComboLeftShift r ->
+                BinaryOperation l (Node _ ComboLeftShift) r ->
                     infixr_ 1 p l "<<=" r
 
-                BinaryOperation l ComboRightShift r ->
+                BinaryOperation l (Node _ ComboRightShift) r ->
                     infixr_ 1 p l ">>=" r
 
-                BinaryOperation l ComboBitwiseAnd r ->
+                BinaryOperation l (Node _ ComboBitwiseAnd) r ->
                     infixr_ 1 p l "&=" r
 
-                BinaryOperation l ComboBitwiseXor r ->
+                BinaryOperation l (Node _ ComboBitwiseXor) r ->
                     infixr_ 1 p l "^=" r
 
-                BinaryOperation l ComboBitwiseOr r ->
+                BinaryOperation l (Node _ ComboBitwiseOr) r ->
                     infixr_ 1 p l "|=" r
 
-                BinaryOperation l Comma r ->
+                BinaryOperation l (Node _ Comma) r ->
                     infixl_ 0 p l "," r
+
+                Parens c ->
+                    "(" ++ go 0 c ++ ")"
     in
     go 0 root
 
@@ -355,8 +359,8 @@ binaryOperation op =
             "[]"
 
 
-type_ : Type -> String
-type_ t =
+type_ : Node Type -> String
+type_ (Node _ t) =
     case t of
         Tvoid ->
             "void"
@@ -883,18 +887,18 @@ unaryOperation op =
             "!"
 
 
-declaration : Declaration -> String
-declaration decl =
+declaration : Node Declaration -> String
+declaration (Node _ decl) =
     case decl of
-        ConstDeclaration tipe name value ->
+        ConstDeclaration tipe (Node _ name) value ->
             "const " ++ type_ tipe ++ " " ++ name ++ " = " ++ expr value ++ ";"
 
-        FunctionDeclaration returnType name args statements ->
+        FunctionDeclaration returnType (Node _ name) (Node _ args) statements ->
             let
                 argsString : String
                 argsString =
                     args
-                        |> List.map (\( argType, argName ) -> type_ argType ++ " " ++ argName)
+                        |> List.map (\( argType, Node _ argName ) -> type_ argType ++ " " ++ argName)
                         |> String.join ", "
 
                 head : String
@@ -906,7 +910,7 @@ declaration decl =
                     head ++ "{}"
 
                 _ ->
-                    head ++ stat 0 (Block statements)
+                    head ++ stat 0 (Node.empty (Block statements))
 
-        UniformDeclaration tipe name ->
+        UniformDeclaration tipe (Node _ name) ->
             "uniform " ++ type_ tipe ++ " " ++ name ++ ";"

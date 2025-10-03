@@ -1,7 +1,8 @@
-module IsAlmostEquals exposing (Check, Path, declaration, expr, list, maybe, stat, string, toExpectation)
+module IsAlmostEquals exposing (Check, Path, declaration, expr, list, maybe, node, statement, string, toExpectation)
 
 import Expect exposing (Expectation)
 import Glsl exposing (Declaration(..), Expression(..), Statement(..), Type)
+import Glsl.Node as Node exposing (Node(..))
 import Glsl.PrettyPrinter
 import Glsl.Simplify
 
@@ -21,15 +22,20 @@ type alias Check =
         ()
 
 
-expr : Expression -> Expression -> Check
+node : (a -> b -> c) -> Node a -> Node b -> c
+node inner (Node _ l) (Node _ r) =
+    inner l r
+
+
+expr : Node Expression -> Node Expression -> Check
 expr expected actual =
-    innerExpr (Glsl.Simplify.expr expected) (Glsl.Simplify.expr actual)
+    innerExpr (Glsl.Simplify.expression expected) (Glsl.Simplify.expression actual)
 
 
-innerExpr : Expression -> Expression -> Check
+innerExpr : Node Expression -> Node Expression -> Check
 innerExpr expected actual =
-    case ( expected, actual ) of
-        ( Call el er, Call al ar ) ->
+    case ( Node.value expected, Node.value actual ) of
+        ( Call el (Node _ er), Call al (Node _ ar) ) ->
             map2
                 "called expression"
                 (innerExpr el al)
@@ -48,7 +54,7 @@ innerExpr expected actual =
         ( BinaryOperation el eop er, BinaryOperation al aop ar ) ->
             map3
                 "operation"
-                (equals Glsl.PrettyPrinter.binaryOperation eop aop)
+                (equalsNode (\(Node _ op) -> Glsl.PrettyPrinter.binaryOperation op) eop aop)
                 "left"
                 (innerExpr el al)
                 "right"
@@ -57,7 +63,7 @@ innerExpr expected actual =
         ( UnaryOperation eop er, UnaryOperation aop ar ) ->
             map2
                 "operation"
-                (equals Glsl.PrettyPrinter.unaryOperation eop aop)
+                (equalsNode (\(Node _ op) -> Glsl.PrettyPrinter.unaryOperation op) eop aop)
                 "child"
                 (innerExpr er ar)
 
@@ -67,6 +73,12 @@ innerExpr expected actual =
                 (innerExpr el al)
                 "fields"
                 (string er ar)
+
+        ( Parens l, _ ) ->
+            innerExpr l actual
+
+        ( _, Parens r ) ->
+            innerExpr expected r
 
         ( Float l, Float r ) ->
             if isInfinite l && isInfinite r then
@@ -88,7 +100,22 @@ innerExpr expected actual =
                     equals String.fromFloat l r
 
         _ ->
-            equals Glsl.PrettyPrinter.expr expected actual
+            equalsNode Glsl.PrettyPrinter.expr expected actual
+
+
+equalsNode : (Node a -> String) -> Node a -> Node a -> Check
+equalsNode ts e a =
+    if Node.value e == Node.value a then
+        Ok ()
+
+    else
+        Err
+            { path = []
+            , expected = ts e
+            , expectedDebug = Debug.toString e
+            , actual = ts a
+            , actualDebug = Debug.toString a
+            }
 
 
 equals : (a -> String) -> a -> a -> Check
@@ -131,16 +158,16 @@ withPath piece result =
             Err { err | path = piece :: err.path }
 
 
-stat : Statement -> Statement -> Check
-stat expected actual =
-    innerStat
-        (Glsl.Simplify.stat expected)
-        (Glsl.Simplify.stat actual)
+statement : Node Statement -> Node Statement -> Check
+statement expected actual =
+    innerStatement
+        (Glsl.Simplify.statement expected)
+        (Glsl.Simplify.statement actual)
 
 
-innerStat : Statement -> Statement -> Check
-innerStat expected actual =
-    case ( expected, actual ) of
+innerStatement : Node Statement -> Node Statement -> Check
+innerStatement expected actual =
+    case ( Node.value expected, Node.value actual ) of
         ( Decl etype ename einit, Decl atype aname ainit ) ->
             map3
                 "type"
@@ -158,50 +185,50 @@ innerStat expected actual =
                 "condition"
                 (expr el al)
                 "statement"
-                (innerStat em am)
+                (innerStatement em am)
 
         ( IfElse el em er, IfElse al am ar ) ->
             map3
                 "condition"
                 (expr el al)
                 "true branch"
-                (innerStat em am)
+                (innerStatement em am)
                 "false branch"
-                (innerStat er ar)
+                (innerStatement er ar)
 
         ( For el em er ep, For al am ar ap ) ->
             map4
                 "init"
-                (maybe innerStat el al)
+                (maybe innerStatement el al)
                 "check"
                 (expr em am)
                 "step"
                 (expr er ar)
                 "child"
-                (innerStat ep ap)
+                (innerStatement ep ap)
 
         ( ExpressionStatement el, ExpressionStatement al ) ->
             expr el al
 
         ( Block ec, Block ac ) ->
-            list innerStat ec ac
+            list innerStatement ec ac
 
         _ ->
-            equals (Glsl.PrettyPrinter.stat 0) expected actual
+            equalsNode (Glsl.PrettyPrinter.stat 0) expected actual
 
 
-declaration : Declaration -> Declaration -> Check
+declaration : Node Declaration -> Node Declaration -> Check
 declaration expected actual =
     let
-        names : String -> String -> String
-        names ex ac =
+        names : Node String -> Node String -> String
+        names (Node _ ex) (Node _ ac) =
             if ex == ac then
                 ex
 
             else
                 ex ++ "/" ++ ac
     in
-    case ( expected, actual ) of
+    case ( Node.value expected, Node.value actual ) of
         ( ConstDeclaration et en ev, ConstDeclaration at an av ) ->
             withPath ("const " ++ names en an) <|
                 map3
@@ -212,7 +239,7 @@ declaration expected actual =
                     "value"
                     (innerExpr ev av)
 
-        ( FunctionDeclaration et en ea es, FunctionDeclaration at an aa as_ ) ->
+        ( FunctionDeclaration et en (Node _ ea) es, FunctionDeclaration at an (Node _ aa) as_ ) ->
             withPath ("function " ++ names en an) <|
                 map4
                     "type"
@@ -222,10 +249,18 @@ declaration expected actual =
                     "args"
                     (list (tuple type_ string) ea aa)
                     "stat"
-                    (list innerStat es as_)
+                    (list innerStatement es as_)
+
+        ( UniformDeclaration et en, UniformDeclaration at an ) ->
+            withPath ("uniform " ++ names en an) <|
+                map2
+                    "type"
+                    (type_ et at)
+                    "name"
+                    (string en an)
 
         _ ->
-            equals Glsl.PrettyPrinter.declaration expected actual
+            equalsNode Glsl.PrettyPrinter.declaration expected actual
 
 
 tuple :
@@ -242,14 +277,14 @@ tuple f s ( ef, es ) ( af, as_ ) =
         (s es as_)
 
 
-type_ : Type -> Type -> Check
+type_ : Node Type -> Node Type -> Check
 type_ expected actual =
-    equals Glsl.PrettyPrinter.type_ expected actual
+    equalsNode Glsl.PrettyPrinter.type_ expected actual
 
 
-string : String -> String -> Check
+string : Node String -> Node String -> Check
 string expected actual =
-    equals identity expected actual
+    equalsNode Node.value expected actual
 
 
 list : (a -> a -> Check) -> List a -> List a -> Check

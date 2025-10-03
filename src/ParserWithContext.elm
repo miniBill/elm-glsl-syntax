@@ -1,5 +1,7 @@
-module ParserWithContext exposing (Parser, andThen, backtrackable, chompIf, chompWhile, commit, end, float, getChompedString, inContext, int, keyword, lazy, loop, many, map, oneOf, problem, sequence, spaces, succeed, symbol, token)
+module ParserWithContext exposing (Parser, andThen, backtrackable, chompIf, chompWhile, commit, end, float, getChompedString, inContext, int, keyword, lazy, location, loop, many, map, node, oneOf, problem, sequence, spaces, succeed, symbol, token)
 
+import Glsl.Node exposing (Node(..))
+import Glsl.Range exposing (Location)
 import Parser exposing (Problem(..))
 import Parser.Advanced exposing ((|.), (|=), Step, Token(..))
 import Parser.Advanced.Workaround
@@ -239,3 +241,23 @@ andThen f parser =
 commit : a -> Parser c a
 commit x =
     Parser.Advanced.commit x
+
+
+node : Parser c a -> Parser c (Node a)
+node p =
+    succeed (\start v end_ -> Node { start = start, end = end_ } v)
+        |= location
+        |= p
+        |= location
+
+
+location : Parser c Location
+location =
+    succeed
+        (\row column ->
+            { row = row
+            , column = column
+            }
+        )
+        |= Parser.Advanced.getRow
+        |= Parser.Advanced.getCol

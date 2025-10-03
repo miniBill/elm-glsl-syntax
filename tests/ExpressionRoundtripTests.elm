@@ -4,6 +4,7 @@ import ErrorUtils
 import Expect
 import Fuzz exposing (Fuzzer)
 import Glsl exposing (BinaryOperation(..), Expression(..), RelationOperation(..), UnaryOperation(..))
+import Glsl.Node as Node exposing (Node)
 import Glsl.Parser
 import Glsl.PrettyPrinter
 import IsAlmostEquals
@@ -16,14 +17,18 @@ import Test exposing (Test, describe, test)
 examples : Test
 examples =
     describe "Expression examples"
-        [ example "-1" (UnaryOperation Negate (Int 1))
-        , example "1" (Int 1)
-        , example "-1++" (UnaryOperation PostfixIncrement (Int -1))
-        , example "(false ? false : false)++" (UnaryOperation PostfixIncrement (Ternary (Bool False) (Bool False) (Bool False)))
+        [ example "-1" (Node.combine UnaryOperation (Node.empty Negate) (Node.empty (Int 1)))
+        , example "1" (Node.empty (Int 1))
+        , example "-1++" (Node.combine UnaryOperation (Node.empty PostfixIncrement) (Node.empty (Int -1)))
+        , example "(false ? false : false)++"
+            (Node.combine UnaryOperation
+                (Node.empty PostfixIncrement)
+                (Node.combine3 Ternary (Node.empty (Bool False)) (Node.empty (Bool False)) (Node.empty (Bool False)))
+            )
         ]
 
 
-example : String -> Expression -> Test
+example : String -> Node Expression -> Test
 example label expr =
     test label <| \_ ->
     expr
@@ -51,37 +56,40 @@ roundtrip =
                 |> IsAlmostEquals.toExpectation
 
 
-fuzzer : Int -> Fuzzer Expression
+fuzzer : Int -> Fuzzer (Node Expression)
 fuzzer depth =
     let
-        base : Fuzzer Expression
+        base : Fuzzer (Node Expression)
         base =
             Fuzz.oneOf
                 [ Fuzz.map Bool Fuzz.bool
                 , Fuzz.map Int Fuzz.int
                 , Fuzz.map Float Fuzz.niceFloat
                 ]
+                |> Fuzz.map Node.empty
 
-        inner : Fuzzer Expression -> Fuzzer Expression
+        inner : Fuzzer (Node Expression) -> Fuzzer (Node Expression)
         inner child =
             Fuzz.oneOf
-                [ Fuzz.map Bool Fuzz.bool
-                , Fuzz.map Int Fuzz.int
-                , Fuzz.map Float Fuzz.niceFloat
-                , Fuzz.map Variable variableNameFuzzer
-                , Fuzz.map3 Ternary child child child
+                [ Fuzz.map (\v -> v |> Bool |> Node.empty) Fuzz.bool
+                , Fuzz.map (\v -> v |> Int |> Node.empty) Fuzz.int
+                , Fuzz.map (\v -> v |> Float |> Node.empty) Fuzz.niceFloat
+                , Fuzz.map (\v -> v |> Variable |> Node.empty) variableNameFuzzer
+                , Fuzz.map3 (Node.combine3 Ternary) child child child
                 , Fuzz.map2 excludeNonsensicalUnary unaryOperationFuzzer child
                 , Fuzz.map3 excludeNonsensicalBinary child binaryOperationFuzzer child
-                , Fuzz.map2 Call (Fuzz.map Variable variableNameFuzzer) (Fuzz.listOfLengthBetween 0 3 child)
-                , Fuzz.map2 excludeNonsensicalDot child variableNameFuzzer
+                , Fuzz.map2 (Node.combine Call)
+                    (Fuzz.map (\v -> v |> Variable |> Node.empty) variableNameFuzzer)
+                    (Fuzz.map Node.empty (Fuzz.listOfLengthBetween 0 3 child))
+                , Fuzz.map2 excludeNonsensicalDot child (Fuzz.map Node.empty variableNameFuzzer)
                 ]
     in
     List.foldl (\_ -> inner) base (List.range 1 depth)
 
 
-excludeNonsensicalDot : Expression -> String -> Expression
+excludeNonsensicalDot : Node Expression -> Node String -> Node Expression
 excludeNonsensicalDot child var =
-    case child of
+    case Node.value child of
         Int _ ->
             child
 
@@ -89,12 +97,12 @@ excludeNonsensicalDot child var =
             child
 
         _ ->
-            Dot child var
+            Node.combine Dot child var
 
 
-excludeNonsensicalBinary : Expression -> BinaryOperation -> Expression -> Expression
+excludeNonsensicalBinary : Node Expression -> Node BinaryOperation -> Node Expression -> Node Expression
 excludeNonsensicalBinary l op r =
-    case ( l, op, r ) of
+    case ( Node.value l, Node.value op, Node.value r ) of
         ( Float _, ArraySubscript, _ ) ->
             r
 
@@ -102,12 +110,12 @@ excludeNonsensicalBinary l op r =
             r
 
         _ ->
-            BinaryOperation l op r
+            Node.combine3 BinaryOperation l op r
 
 
-excludeNonsensicalUnary : UnaryOperation -> Expression -> Expression
+excludeNonsensicalUnary : Node UnaryOperation -> Node Expression -> Node Expression
 excludeNonsensicalUnary op c =
-    case ( op, c ) of
+    case ( Node.value op, Node.value c ) of
         ( PostfixIncrement, Int _ ) ->
             -- this wouldn't make sense
             c
@@ -141,13 +149,13 @@ excludeNonsensicalUnary op c =
             c
 
         ( Negate, Float f ) ->
-            Float -f
+            Node.empty (Float -f)
 
         ( Negate, Int i ) ->
-            Int -i
+            Node.empty (Int -i)
 
         _ ->
-            UnaryOperation op c
+            Node.combine UnaryOperation op c
 
 
 variableNameFuzzer : Fuzzer String
@@ -181,7 +189,7 @@ reserved =
         |> Set.fromList
 
 
-binaryOperationFuzzer : Fuzzer BinaryOperation
+binaryOperationFuzzer : Fuzzer (Node BinaryOperation)
 binaryOperationFuzzer =
     Fuzz.oneOfValues
         [ ArraySubscript
@@ -217,9 +225,10 @@ binaryOperationFuzzer =
         , ComboBitwiseOr
         , Comma
         ]
+        |> Fuzz.map Node.empty
 
 
-unaryOperationFuzzer : Fuzzer UnaryOperation
+unaryOperationFuzzer : Fuzzer (Node UnaryOperation)
 unaryOperationFuzzer =
     Fuzz.oneOfValues
         [ PostfixIncrement
@@ -231,3 +240,4 @@ unaryOperationFuzzer =
         , Invert
         , Not
         ]
+        |> Fuzz.map Node.empty

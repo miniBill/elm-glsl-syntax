@@ -2,11 +2,11 @@ module ShaderRoundtripTest exposing (simple)
 
 import ErrorUtils
 import Expect
-import Glsl exposing (BinaryOperation(..), Declaration(..), Expression(..), Statement(..), Type(..))
 import Glsl.Parser
 import Parser
 import Parser.Advanced exposing ((|.))
 import Test exposing (Test, test)
+import Utils exposing (assign, call, func, i, var, void)
 
 
 simple : Test
@@ -33,17 +33,14 @@ checkParses label source =
             o
                 |> Expect.equal
                     ( Just { version = 300 }
-                    , [ FunctionDeclaration Tvoid "main" [] <|
-                            [ ExpressionStatement
-                                (BinaryOperation
-                                    (Variable "pos3")
-                                    Assign
-                                    (Call
-                                        (Variable "vec3")
-                                        [ Variable "pos"
-                                        , Int 1
-                                        ]
-                                    )
+                    , [ func void "main" [] <|
+                            [ assign
+                                (var "pos3")
+                                (call
+                                    "vec3"
+                                    [ var "pos"
+                                    , i 1
+                                    ]
                                 )
                             ]
                       ]
