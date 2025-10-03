@@ -1,7 +1,6 @@
 module Glsl.Node exposing
     ( Node(..)
-    , empty, combine, combine3, range, value, map
-    , combine4
+    , empty, combine, combine3, combine4, range, value, map
     )
 
 {-| Represents a `Node` of the AST (Abstract Syntax Tree).
@@ -17,7 +16,7 @@ element of the tree was found.
 
 ## Functions
 
-@docs empty, combine, combine3, range, value, map
+@docs empty, combine, combine3, combine4, range, value, map
 
 -}
 

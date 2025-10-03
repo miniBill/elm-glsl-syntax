@@ -3,6 +3,7 @@ module ShaderRoundtripTest exposing (simple)
 import ErrorUtils
 import Expect
 import Glsl.Parser
+import IsAlmostEquals
 import Parser
 import Parser.Advanced exposing ((|.))
 import Test exposing (Test, test)
@@ -29,22 +30,29 @@ checkParses label source =
                 |> ErrorUtils.errorsToString source
                 |> Expect.fail
 
-        Ok o ->
-            o
-                |> Expect.equal
-                    ( Just { version = 300 }
-                    , [ func void "main" [] <|
-                            [ assign
-                                (var "pos3")
-                                (call
-                                    "vec3"
-                                    [ var "pos"
-                                    , i 1
-                                    ]
-                                )
-                            ]
-                      ]
-                    )
+        Ok ( v, ds ) ->
+            Expect.all
+                ((\_ -> v |> Expect.equal (Just { version = 300 }))
+                    :: List.map
+                        (\decl _ ->
+                            decl
+                                |> IsAlmostEquals.declaration
+                                    (func void "main" [] <|
+                                        [ assign
+                                            (var "pos3")
+                                            (call
+                                                "vec3"
+                                                [ var "pos"
+                                                , i 1
+                                                ]
+                                            )
+                                        ]
+                                    )
+                                |> IsAlmostEquals.toExpectation
+                        )
+                        ds
+                )
+                ()
 
 
 simpleSrc : String

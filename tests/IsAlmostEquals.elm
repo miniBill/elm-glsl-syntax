@@ -1,7 +1,7 @@
-module IsAlmostEquals exposing (Check, Path, declaration, expr, list, maybe, node, statement, string, toExpectation)
+module IsAlmostEquals exposing (Check, Path, declaration, expr, list, maybe, node, statement, string, toExpectation, tuple)
 
 import Expect exposing (Expectation)
-import Glsl exposing (Declaration(..), Expression(..), Statement(..), Type)
+import Glsl exposing (Declaration(..), Expression(..), Statement(..), Type(..))
 import Glsl.Node as Node exposing (Node(..))
 import Glsl.PrettyPrinter
 import Glsl.Simplify
@@ -210,6 +210,12 @@ innerStatement expected actual =
         ( ExpressionStatement el, ExpressionStatement al ) ->
             expr el al
 
+        ( Block [ e ], _ ) ->
+            innerStatement e actual
+
+        ( _, Block [ a ] ) ->
+            innerStatement expected a
+
         ( Block ec, Block ac ) ->
             list innerStatement ec ac
 
@@ -279,7 +285,17 @@ tuple f s ( ef, es ) ( af, as_ ) =
 
 type_ : Node Type -> Node Type -> Check
 type_ expected actual =
-    equalsNode Glsl.PrettyPrinter.type_ expected actual
+    case ( Node.value expected, Node.value actual ) of
+        ( Tin ec, Tin ac ) ->
+            withPath "in" <|
+                type_ ec ac
+
+        ( Tout ec, Tout ac ) ->
+            withPath "out" <|
+                type_ ec ac
+
+        _ ->
+            equalsNode Glsl.PrettyPrinter.type_ expected actual
 
 
 string : Node String -> Node String -> Check
