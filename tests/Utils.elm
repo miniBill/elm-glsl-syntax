@@ -1,4 +1,4 @@
-module Utils exposing (add, assign, by, call, const, decl, div, dot, expr, f, float, func, i, in_, int, mat2, negate_, out, return, subtract, var, vec2, vec3, vec4, void)
+module Utils exposing (add, assign, by, call, const, constDecl, decl, div, dot, expr, f, float, func, i, in_, int, mat2, negate_, out, return, subtract, var, vec2, vec3, vec4, void)
 
 import Glsl exposing (ArgType(..), BinaryOperation(..), Declaration(..), Expression(..), Statement(..), Type(..), UnaryOperation(..))
 import Glsl.Node as Node exposing (Node)
@@ -9,9 +9,14 @@ const t n v =
     Node.empty (ConstDeclaration (Node.empty (Tuple.first (t ""))) (Node.empty n) v)
 
 
+constDecl : (String -> ( Type, a )) -> String -> Node Expression -> Node Statement
+constDecl t n v =
+    Node.empty (Decl { const = Just (Node.empty ()) } (Node.empty (Tuple.first (t ""))) (Node.empty n) (Just v))
+
+
 decl : (String -> ( Type, a )) -> String -> Node Expression -> Node Statement
 decl t n v =
-    Node.empty (Decl { const = Just (Node.empty ()) } (Node.empty (Tuple.first (t ""))) (Node.empty n) (Just v))
+    Node.empty (Decl { const = Nothing } (Node.empty (Tuple.first (t ""))) (Node.empty n) (Just v))
 
 
 func : (String -> ( Type, a )) -> String -> List ( ArgType, String ) -> List (Node Statement) -> Node Declaration

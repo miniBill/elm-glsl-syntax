@@ -8,7 +8,7 @@ import Glsl.Parser
 import IsAlmostEquals
 import Parser.Advanced
 import Test exposing (Test, describe, test)
-import Utils exposing (add, assign, by, call, const, decl, div, dot, f, float, func, in_, mat2, negate_, out, return, subtract, var, vec2, vec3, vec4, void)
+import Utils exposing (add, assign, by, call, const, constDecl, decl, div, dot, f, float, func, in_, mat2, negate_, out, return, subtract, var, vec2, vec3, vec4, void)
 
 
 suite : Test
@@ -264,7 +264,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord ) {
                         , call "vec2" [ by (var "s") (f 0.5), by (f -0.5) (var "s3") ]
                         ]
                     ]
-            , decl float "r" (f 0.5)
+            , constDecl float "r" (f 0.5)
             , decl vec4 "truchet" <|
                 call "vec4"
                     [ call "vec3"
