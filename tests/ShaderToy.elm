@@ -132,7 +132,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord ) {
 """
     <|
         [ const float "i3" (f 0.5773502691896258)
-        , func vec4 "pick3" [ vec4 "a", vec4 "b", vec4 "c", float "u" ] <|
+        , func vec4 "pick3" [ in_ vec4 "a", in_ vec4 "b", in_ vec4 "c", in_ float "u" ] <|
             [ decl float "v" (call "fract" [ by (var "u") (f (1 / 3)) ])
             , return
                 (call "mix"
@@ -142,7 +142,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord ) {
                     ]
                 )
             ]
-        , func vec4 "closestHexCenters" [ vec2 "p" ] <|
+        , func vec4 "closestHexCenters" [ in_ vec2 "p" ] <|
             [ decl vec2 "pi" (call "floor" [ var "p" ])
             , decl vec2 "pf" (call "fract" [ var "p" ])
             , decl vec4 "nn" <|
@@ -168,10 +168,10 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord ) {
         , const float "s3" (f 1.7320508075688772)
         , const mat2 "tri2cart" <|
             call "mat2" [ f 1, f 0, f -0.5, by (f 0.5) (var "s3") ]
-        , func float "hash" [ vec2 "pos" ] <|
+        , func float "hash" [ in_ vec2 "pos" ] <|
             [ return (Node.empty (Dot (call "fract" [ div (var "pos") (f 511) ]) (Node.empty "x")))
             ]
-        , func vec3 "perpBisector" [ vec2 "p1", vec2 "p2" ] <|
+        , func vec3 "perpBisector" [ in_ vec2 "p1", in_ vec2 "p2" ] <|
             [ decl vec2 "p21" <| subtract (var "p2") (var "p1")
             , decl vec3 "pa" <|
                 call "vec3"

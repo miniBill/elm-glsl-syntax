@@ -1,7 +1,7 @@
 module IsAlmostEquals exposing (Check, Path, declaration, expr, list, maybe, node, statement, string, toExpectation, tuple)
 
 import Expect exposing (Expectation)
-import Glsl exposing (Declaration(..), Expression(..), Statement(..), Type(..))
+import Glsl exposing (ArgType(..), Declaration(..), Expression(..), Statement(..), Type)
 import Glsl.Node as Node exposing (Node(..))
 import Glsl.PrettyPrinter
 import Glsl.Simplify
@@ -168,8 +168,10 @@ statement expected actual =
 innerStatement : Node Statement -> Node Statement -> Check
 innerStatement expected actual =
     case ( Node.value expected, Node.value actual ) of
-        ( Decl etype ename einit, Decl atype aname ainit ) ->
-            map3
+        ( Decl ec etype ename einit, Decl ac atype aname ainit ) ->
+            map4
+                "const"
+                (const ec ac)
                 "type"
                 (type_ etype atype)
                 "name"
@@ -223,6 +225,16 @@ innerStatement expected actual =
             equalsNode (Glsl.PrettyPrinter.stat 0) expected actual
 
 
+const : { const : Maybe (Node ()) } -> { const : Maybe (Node ()) } -> Check
+const expected actual =
+    maybe (node unit) expected.const actual.const
+
+
+unit : () -> () -> Check
+unit _ _ =
+    Ok ()
+
+
 declaration : Node Declaration -> Node Declaration -> Check
 declaration expected actual =
     let
@@ -253,7 +265,7 @@ declaration expected actual =
                     "name"
                     (string en an)
                     "args"
-                    (list (tuple type_ string) ea aa)
+                    (list (tuple argType string) ea aa)
                     "stat"
                     (list innerStatement es as_)
 
@@ -283,19 +295,28 @@ tuple f s ( ef, es ) ( af, as_ ) =
         (s es as_)
 
 
-type_ : Node Type -> Node Type -> Check
-type_ expected actual =
+argType : Node ArgType -> Node ArgType -> Check
+argType expected actual =
     case ( Node.value expected, Node.value actual ) of
-        ( Tin ec, Tin ac ) ->
+        ( ArgIn ec, ArgIn ac ) ->
             withPath "in" <|
                 type_ ec ac
 
-        ( Tout ec, Tout ac ) ->
+        ( ArgOut ec, ArgOut ac ) ->
             withPath "out" <|
                 type_ ec ac
 
+        ( ArgInOut ec, ArgInOut ac ) ->
+            withPath "inout" <|
+                type_ ec ac
+
         _ ->
-            equalsNode Glsl.PrettyPrinter.type_ expected actual
+            equalsNode Glsl.PrettyPrinter.argType expected actual
+
+
+type_ : Node Type -> Node Type -> Check
+type_ expected actual =
+    equalsNode Glsl.PrettyPrinter.type_ expected actual
 
 
 string : Node String -> Node String -> Check

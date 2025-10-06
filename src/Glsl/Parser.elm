@@ -1,6 +1,6 @@
 module Glsl.Parser exposing (Context(..), DeadEnd, Parser, expression, file, function, statement)
 
-import Glsl exposing (BinaryOperation(..), Declaration(..), Expression(..), RelationOperation(..), Statement(..), Type(..), UnaryOperation(..))
+import Glsl exposing (ArgType(..), BinaryOperation(..), Declaration(..), Expression(..), RelationOperation(..), Statement(..), Type(..), UnaryOperation(..))
 import Glsl.Node as Node exposing (Node(..))
 import Parser exposing (Problem(..))
 import Parser.Advanced exposing ((|.), (|=), Step(..), Trailing(..))
@@ -96,10 +96,10 @@ uniform =
         |. symbol ";"
 
 
-argParser : Parser ( Node Type, Node String )
+argParser : Parser ( Node ArgType, Node String )
 argParser =
     succeed Tuple.pair
-        |= typeParser
+        |= argTypeParser
         |= node identifierParser
 
 
@@ -113,32 +113,30 @@ identifierParser =
         |. spaces
 
 
+argTypeParser : Parser (Node ArgType)
+argTypeParser =
+    oneOf
+        [ succeed ArgInOut
+            |. keyword "inout"
+            |= typeParser
+        , succeed ArgOut
+            |. keyword "out"
+            |= typeParser
+        , succeed ArgIn
+            |. keyword "in"
+            |= typeParser
+        , succeed ArgIn
+            |= typeParser
+        ]
+        |> node
+
+
 typeParser : Parser (Node Type)
 typeParser =
-    let
-        baseParser : Parser (Node Type)
-        baseParser =
-            types
-                |> List.map (\( s, t ) -> succeed t |. keyword s)
-                |> oneOf
-                |> node
-    in
-    succeed identity
-        |. oneOf
-            [ keyword "const"
-            , succeed ()
-            ]
-        |= oneOf
-            [ succeed Tout
-                |. keyword "out"
-                |= baseParser
-                |> node
-            , succeed Tin
-                |. keyword "in"
-                |= baseParser
-                |> node
-            , baseParser
-            ]
+    types
+        |> List.map (\( s, t ) -> succeed t |. keyword s)
+        |> oneOf
+        |> node
 
 
 types : List ( String, Type )
@@ -312,10 +310,12 @@ blockParser =
 
 defParser : Parser Statement
 defParser =
-    succeed
-        (\type_ var val ->
-            Decl type_ var val
-        )
+    succeed Decl
+        |= oneOf
+            [ succeed (\n -> { const = Just n })
+                |= node (keyword "const")
+            , succeed { const = Nothing }
+            ]
         |= typeParser
         |= node identifierParser
         |= oneOf

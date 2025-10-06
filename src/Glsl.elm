@@ -1,5 +1,5 @@
 module Glsl exposing
-    ( Declaration(..), Statement(..), Type(..)
+    ( Declaration(..), Statement(..), Type(..), ArgType(..)
     , Expression(..), BinaryOperation(..), UnaryOperation(..), RelationOperation(..)
     )
 
@@ -8,7 +8,7 @@ module Glsl exposing
 
 # Types
 
-@docs Declaration, Statement, Type
+@docs Declaration, Statement, Type, ArgType
 @docs Expression, BinaryOperation, UnaryOperation, RelationOperation
 
 -}
@@ -18,7 +18,7 @@ import Glsl.Node exposing (Node)
 
 {-| -}
 type Declaration
-    = FunctionDeclaration (Node Type) (Node String) (Node (List ( Node Type, Node String ))) (List (Node Statement))
+    = FunctionDeclaration (Node Type) (Node String) (Node (List ( Node ArgType, Node String ))) (List (Node Statement))
     | UniformDeclaration (Node Type) (Node String)
     | ConstDeclaration (Node Type) (Node String) (Node Expression)
 
@@ -115,8 +115,14 @@ type Statement
     | Break
     | Continue
     | ExpressionStatement (Node Expression)
-    | Decl (Node Type) (Node String) (Maybe (Node Expression))
+    | Decl { const : Maybe (Node ()) } (Node Type) (Node String) (Maybe (Node Expression))
     | Block (List (Node Statement))
+
+
+type ArgType
+    = ArgIn (Node Type)
+    | ArgOut (Node Type)
+    | ArgInOut (Node Type)
 
 
 type Type
@@ -198,9 +204,6 @@ type Type
     | TusamplerBuffer
     | Tusampler2DMS
     | Tusampler2DMSArray
-      -- in/on
-    | Tin (Node Type)
-    | Tout (Node Type)
       --
       -- GLSL 4.60
       -- double

@@ -33,7 +33,7 @@ errorsToString input e =
         }
         input
         e
-        |> String.join "\n"
+        |> String.concat
 
 
 contextToString : Glsl.Parser.Context -> String

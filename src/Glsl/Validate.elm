@@ -1,7 +1,7 @@
 module Glsl.Validate exposing (Error(..), asV1_10Type, asV3_30Type)
 
 import Glsl
-import Glsl.Node as Node exposing (Node(..))
+import Glsl.Node exposing (Node(..))
 import Glsl.V1_10
 import Glsl.V3_30
 

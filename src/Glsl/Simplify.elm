@@ -26,8 +26,8 @@ statement =
                 IfElse e s1 s2 ->
                     IfElse (expression e) (statement s1) (statement s2)
 
-                Decl tipe name val ->
-                    Decl tipe name (Maybe.map expression val)
+                Decl c tipe name val ->
+                    Decl c tipe name (Maybe.map expression val)
 
                 For init check step loop ->
                     For

@@ -83,10 +83,11 @@ statFuzzer depth =
                 , Fuzz.map3 (Node.combine3 IfElse) expr child child
                 , Fuzz.map4 (\m -> Node.combine3 (For m)) (Fuzz.maybe child) expr expr child
                 , Fuzz.map (lift ExpressionStatement) expr
-                , Fuzz.map3 (\t n e -> Node.combine (\tv nv -> Decl tv nv e) t n)
+                , Fuzz.map4 (\c e -> Node.combine (\tv nv -> Decl { const = c } tv nv e))
+                    (Fuzz.maybe (Fuzz.constant (Node.empty ())))
+                    (Fuzz.maybe expr)
                     typeFuzzer
                     (ExpressionRoundtripTests.variableNameFuzzer |> Fuzz.map Node.empty)
-                    (Fuzz.maybe expr)
                 , Fuzz.map (\v -> v |> Block |> Node.empty) (Fuzz.listOfLengthBetween 0 3 child)
                 ]
     in

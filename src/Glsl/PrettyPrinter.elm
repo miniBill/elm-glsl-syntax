@@ -1,6 +1,6 @@
-module Glsl.PrettyPrinter exposing (binaryOperation, declaration, expr, float, stat, type_, unaryOperation)
+module Glsl.PrettyPrinter exposing (argType, binaryOperation, declaration, expr, float, stat, type_, unaryOperation)
 
-import Glsl exposing (BinaryOperation(..), Declaration(..), Expression(..), RelationOperation(..), Statement(..), Type(..), UnaryOperation(..))
+import Glsl exposing (ArgType(..), BinaryOperation(..), Declaration(..), Expression(..), RelationOperation(..), Statement(..), Type(..), UnaryOperation(..))
 import Glsl.Node as Node exposing (Node(..))
 
 
@@ -74,11 +74,27 @@ stat i (Node _ c) =
         ExpressionStatement e ->
             indent i (expr e ++ ";")
 
-        Decl t (Node _ n) (Just e) ->
-            indent i (type_ t ++ " " ++ n ++ " = " ++ expr e ++ ";")
+        Decl { const } t (Node _ n) e ->
+            let
+                constString : String
+                constString =
+                    case const of
+                        Nothing ->
+                            ""
 
-        Decl t (Node _ n) Nothing ->
-            indent i (type_ t ++ " " ++ n ++ ";")
+                        Just _ ->
+                            "const "
+
+                exprString : String
+                exprString =
+                    case e of
+                        Just ex ->
+                            " = " ++ expr ex
+
+                        Nothing ->
+                            ""
+            in
+            indent i (constString ++ type_ t ++ " " ++ n ++ exprString ++ ";")
 
 
 indent : Int -> String -> String
@@ -359,17 +375,24 @@ binaryOperation op =
             "[]"
 
 
+argType : Node ArgType -> String
+argType (Node _ t) =
+    case t of
+        ArgIn tt ->
+            type_ tt
+
+        ArgOut tt ->
+            "out " ++ type_ tt
+
+        ArgInOut tt ->
+            "inout " ++ type_ tt
+
+
 type_ : Node Type -> String
 type_ (Node _ t) =
     case t of
         Tvoid ->
             "void"
-
-        Tin tt ->
-            "in " ++ type_ tt
-
-        Tout tt ->
-            "out " ++ type_ tt
 
         Tbool ->
             "bool"
@@ -898,7 +921,7 @@ declaration (Node _ decl) =
                 argsString : String
                 argsString =
                     args
-                        |> List.map (\( argType, Node _ argName ) -> type_ argType ++ " " ++ argName)
+                        |> List.map (\( t, Node _ argName ) -> argType t ++ " " ++ argName)
                         |> String.join ", "
 
                 head : String

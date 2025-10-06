@@ -1,7 +1,5 @@
 module Glsl.V3_30 exposing (Type(..))
 
-import Glsl.Node exposing (Node)
-
 
 type Type
     = --
@@ -82,6 +80,3 @@ type Type
     | TusamplerBuffer
     | Tusampler2DMS
     | Tusampler2DMSArray
-      -- in/on
-    | Tin (Node Type)
-    | Tout (Node Type)

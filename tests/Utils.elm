@@ -1,6 +1,6 @@
 module Utils exposing (add, assign, by, call, const, decl, div, dot, expr, f, float, func, i, in_, int, mat2, negate_, out, return, subtract, var, vec2, vec3, vec4, void)
 
-import Glsl exposing (BinaryOperation(..), Declaration(..), Expression(..), Statement(..), Type(..), UnaryOperation(..))
+import Glsl exposing (ArgType(..), BinaryOperation(..), Declaration(..), Expression(..), Statement(..), Type(..), UnaryOperation(..))
 import Glsl.Node as Node exposing (Node)
 
 
@@ -11,16 +11,20 @@ const t n v =
 
 decl : (String -> ( Type, a )) -> String -> Node Expression -> Node Statement
 decl t n v =
-    Node.empty (Decl (Node.empty (Tuple.first (t ""))) (Node.empty n) (Just v))
+    Node.empty (Decl { const = Just (Node.empty ()) } (Node.empty (Tuple.first (t ""))) (Node.empty n) (Just v))
 
 
-func : (String -> ( Type, a )) -> String -> List ( Type, String ) -> List (Node Statement) -> Node Declaration
+func : (String -> ( Type, a )) -> String -> List ( ArgType, String ) -> List (Node Statement) -> Node Declaration
 func t n a s =
     Node.empty
         (FunctionDeclaration
             (Node.empty (Tuple.first (t "")))
             (Node.empty n)
-            (a |> List.map (\( an, av ) -> ( Node.empty an, Node.empty av )) |> Node.empty)
+            (a
+                |> List.map
+                    (\( an, av ) -> ( Node.empty an, Node.empty av ))
+                |> Node.empty
+            )
             s
         )
 
@@ -60,14 +64,14 @@ mat2 s =
     ( Tmat2, s )
 
 
-in_ : (String -> ( Type, a )) -> a -> ( Type, a )
+in_ : (String -> ( Type, a )) -> a -> ( ArgType, a )
 in_ t n =
-    ( Tin (Node.empty (Tuple.first (t ""))), n )
+    ( ArgIn (Node.empty (Tuple.first (t ""))), n )
 
 
-out : (String -> ( Type, a )) -> a -> ( Type, a )
+out : (String -> ( Type, a )) -> a -> ( ArgType, a )
 out t n =
-    ( Tout (Node.empty (Tuple.first (t ""))), n )
+    ( ArgOut (Node.empty (Tuple.first (t ""))), n )
 
 
 var : String -> Node Expression
