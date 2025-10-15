@@ -1,6 +1,6 @@
-module Utils exposing (add, assign, by, call, const, constDecl, decl, div, dot, expr, f, float, func, i, in_, int, mat2, negate_, out, return, subtract, var, vec2, vec3, vec4, void)
+module Utils exposing (add, assign, by, call, const, constDecl, decl, div, dot, expr, f, float, func, highp, i, in_, int, mat2, negate_, out, precision, return, subtract, var, vec2, vec3, vec4, void)
 
-import Glsl exposing (ArgType(..), BinaryOperation(..), Declaration(..), Expression(..), Statement(..), Type(..), UnaryOperation(..))
+import Glsl exposing (ArgType(..), BinaryOperation(..), Declaration(..), Expression(..), Precision(..), Statement(..), Type(..), UnaryOperation(..))
 import Glsl.Node as Node exposing (Node)
 
 
@@ -32,6 +32,16 @@ func t n a s =
             )
             s
         )
+
+
+precision : Node Precision -> (String -> ( Type, String )) -> Node Declaration
+precision kind tipe =
+    Node.empty (PrecisionDeclaration kind (Node.empty (Tuple.first (tipe ""))))
+
+
+highp : Node Precision
+highp =
+    Node.empty Highp
 
 
 void : a -> ( Type, a )
