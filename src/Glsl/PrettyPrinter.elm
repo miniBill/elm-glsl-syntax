@@ -1,4 +1,4 @@
-module Glsl.PrettyPrinter exposing (argType, binaryOperation, declaration, expr, float, stat, type_, unaryOperation)
+module Glsl.PrettyPrinter exposing (argType, binaryOperation, declaration, expr, float, precision, stat, type_, unaryOperation)
 
 import Glsl exposing (ArgType(..), BinaryOperation(..), Declaration(..), Expression(..), Precision(..), RelationOperation(..), Statement(..), Type(..), UnaryOperation(..))
 import Glsl.Node as Node exposing (Node(..))

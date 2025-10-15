@@ -1,7 +1,7 @@
 module IsAlmostEquals exposing (Check, Path, declaration, expr, list, maybe, node, statement, string, toExpectation, tuple)
 
 import Expect exposing (Expectation)
-import Glsl exposing (ArgType(..), Declaration(..), Expression(..), Statement(..), Type)
+import Glsl exposing (ArgType(..), Declaration(..), Expression(..), Precision(..), Statement(..), Type)
 import Glsl.Node as Node exposing (Node(..))
 import Glsl.PrettyPrinter
 import Glsl.Simplify
@@ -277,8 +277,31 @@ declaration expected actual =
                     "name"
                     (string en an)
 
+        ( PrecisionDeclaration ep et, PrecisionDeclaration ap at ) ->
+            withPath
+                ("precision "
+                    ++ names
+                        (Node.empty (Glsl.PrettyPrinter.precision ep))
+                        (Node.empty (Glsl.PrettyPrinter.precision ap))
+                    ++ " "
+                    ++ names
+                        (Node.empty (Glsl.PrettyPrinter.type_ et))
+                        (Node.empty (Glsl.PrettyPrinter.type_ at))
+                )
+            <|
+                map2
+                    "precision"
+                    (precision ep ap)
+                    "type"
+                    (type_ et at)
+
         _ ->
             equalsNode Glsl.PrettyPrinter.declaration expected actual
+
+
+precision : Node Precision -> Node Precision -> Check
+precision (Node _ Highp) (Node _ Highp) =
+    Ok ()
 
 
 tuple :
