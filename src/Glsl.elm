@@ -1,5 +1,5 @@
 module Glsl exposing
-    ( Declaration(..), Statement(..), Type(..), ArgType(..)
+    ( Declaration(..), Precision(..), Statement(..), Type(..), ArgType(..)
     , Expression(..), BinaryOperation(..), UnaryOperation(..), RelationOperation(..)
     )
 
@@ -8,7 +8,7 @@ module Glsl exposing
 
 # Types
 
-@docs Declaration, Statement, Type, ArgType
+@docs Declaration, Precision, Statement, Type, ArgType
 @docs Expression, BinaryOperation, UnaryOperation, RelationOperation
 
 -}
@@ -21,6 +21,11 @@ type Declaration
     = FunctionDeclaration (Node Type) (Node String) (Node (List ( Node ArgType, Node String ))) (List (Node Statement))
     | UniformDeclaration (Node Type) (Node String)
     | ConstDeclaration (Node Type) (Node String) (Node Expression)
+    | PrecisionDeclaration (Node Precision) (Node Type)
+
+
+type Precision
+    = Highp
 
 
 type Expression

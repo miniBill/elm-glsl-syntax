@@ -1,7 +1,8 @@
 module Glsl.Parser exposing (Context(..), DeadEnd, Parser, expression, file, function, statement)
 
-import Glsl exposing (ArgType(..), BinaryOperation(..), Declaration(..), Expression(..), RelationOperation(..), Statement(..), Type(..), UnaryOperation(..))
+import Glsl exposing (ArgType(..), BinaryOperation(..), Declaration(..), Expression(..), Precision(..), RelationOperation(..), Statement(..), Type(..), UnaryOperation(..))
 import Glsl.Node as Node exposing (Node(..))
+import Glsl.PrettyPrinter as PrettyPrinter
 import Parser exposing (Problem(..))
 import Parser.Advanced exposing ((|.), (|=), Step(..), Trailing(..))
 import ParserWithContext exposing (chompIf, chompWhile, end, float, getChompedString, inContext, int, keyword, location, loop, many, node, oneOf, sequence, spaces, succeed, symbol)
@@ -44,12 +45,26 @@ file =
             (oneOf
                 [ const
                 , uniform
+                , precision
                 , function
                 ]
                 |> node
             )
         |. end
         |> inContext ParsingFile
+
+
+precision : Parser Declaration
+precision =
+    succeed PrecisionDeclaration
+        |. keyword "precision"
+        |= (oneOf
+                [ succeed Highp |. keyword "highp"
+                ]
+                |> node
+           )
+        |= typeParser
+        |. symbol ";"
 
 
 function : Parser Declaration
@@ -134,87 +149,116 @@ argTypeParser =
 typeParser : Parser (Node Type)
 typeParser =
     types
-        |> List.map (\( s, t ) -> succeed t |. keyword s)
+        |> List.map
+            (\t ->
+                let
+                    name : String
+                    name =
+                        PrettyPrinter.type_ (Node.empty t)
+                in
+                succeed t
+                    |. keyword name
+            )
         |> oneOf
         |> node
 
 
-types : List ( String, Type )
+types : List Type
 types =
-    [ ( "void", Tvoid )
-    , ( "bool", Tbool )
-    , ( "bvec2", Tbvec2 )
-    , ( "bvec3", Tbvec3 )
-    , ( "bvec4", Tbvec4 )
-    , ( "int", Tint )
-    , ( "ivec2", Tivec2 )
-    , ( "ivec3", Tivec3 )
-    , ( "ivec4", Tivec4 )
-    , ( "uint", Tuint )
-    , ( "uvec2", Tuvec2 )
-    , ( "uvec3", Tuvec3 )
-    , ( "uvec4", Tuvec4 )
-    , ( "float", Tfloat )
-    , ( "vec2", Tvec2 )
-    , ( "vec3", Tvec3 )
-    , ( "vec4", Tvec4 )
-    , ( "double", Tdouble )
-    , ( "dvec2", Tdvec2 )
-    , ( "dvec3", Tdvec3 )
-    , ( "dvec4", Tdvec4 )
-    , ( "mat2", Tmat2 )
-    , ( "mat2x2", Tmat2 )
-    , ( "mat3", Tmat3 )
-    , ( "mat3x3", Tmat3 )
-    , ( "mat4", Tmat4 )
-    , ( "mat4x4", Tmat4 )
-    , ( "mat2x3", Tmat2x3 )
-    , ( "mat2x4", Tmat2x4 )
-    , ( "mat3x2", Tmat3x2 )
-    , ( "mat3x4", Tmat3x4 )
-    , ( "mat4x2", Tmat4x2 )
-    , ( "mat4x3", Tmat4x3 )
-    , ( "dmat2", Tdmat2 )
-    , ( "dmat2x2", Tdmat2 )
-    , ( "dmat3", Tdmat3 )
-    , ( "dmat3x3", Tdmat3 )
-    , ( "dmat4", Tdmat4 )
-    , ( "dmat4x4", Tdmat4 )
-    , ( "dmat2x3", Tdmat2x3 )
-    , ( "dmat2x4", Tdmat2x4 )
-    , ( "dmat3x2", Tdmat3x2 )
-    , ( "dmat3x4", Tdmat3x4 )
-    , ( "dmat4x2", Tdmat4x2 )
-    , ( "dmat4x3", Tdmat4x3 )
-    , ( "sampler1d", Tsampler1D )
-    , ( "image1d", Timage1D )
-    , ( "sampler2d", Tsampler2D )
-    , ( "image2d", Timage2D )
-    , ( "sampler3d", Tsampler3D )
-    , ( "image3d", Timage3D )
-    , ( "samplercube", TsamplerCube )
-    , ( "imagecube", TimageCube )
-    , ( "sampler2drect", Tsampler2DRect )
-    , ( "image2drect", Timage2DRect )
-    , ( "sampler1darray", Tsampler1DArray )
-    , ( "image1darray", Timage1DArray )
-    , ( "sampler2darray", Tsampler2DArray )
-    , ( "image2darray", Timage2DArray )
-    , ( "samplerbuffer", TsamplerBuffer )
-    , ( "imagebuffer", TimageBuffer )
-    , ( "sampler2dms", Tsampler2DMS )
-    , ( "image2dms", Timage2DMS )
-    , ( "sampler2dmsarray", Tsampler2DMSArray )
-    , ( "image2dmsarray", Timage2DMSArray )
-    , ( "samplercubearray", TsamplerCubeArray )
-    , ( "imagecubearray", TimageCubeArray )
-    , ( "sampler1dshadow", Tsampler1DShadow )
-    , ( "sampler2dshadow", Tsampler2DShadow )
-    , ( "sampler2drectshadow", Tsampler2DRectShadow )
-    , ( "sampler1darrayshadow", Tsampler1DArrayShadow )
-    , ( "sampler2darrayshadow", Tsampler2DArrayShadow )
-    , ( "samplercubeshadow", TsamplerCubeShadow )
-    , ( "samplercubearrayshadow", TsamplerCubeArrayShadow )
+    [ Tbool
+    , Tbvec2
+    , Tbvec3
+    , Tbvec4
+    , Tdmat2
+    , Tdmat2x2
+    , Tdmat2x3
+    , Tdmat2x4
+    , Tdmat3
+    , Tdmat3x2
+    , Tdmat3x3
+    , Tdmat3x4
+    , Tdmat4
+    , Tdmat4x2
+    , Tdmat4x3
+    , Tdmat4x4
+    , Tdouble
+    , Tdvec2
+    , Tdvec3
+    , Tdvec4
+    , Tfloat
+    , Timage1D
+    , Timage1DArray
+    , Timage2D
+    , Timage2DArray
+    , Timage2DMS
+    , Timage2DMSArray
+    , Timage2DRect
+    , Timage3D
+    , TimageBuffer
+    , TimageCube
+    , TimageCubeArray
+    , Tint
+    , Tisampler1D
+    , Tisampler1DArray
+    , Tisampler2D
+    , Tisampler2DArray
+    , Tisampler2DMS
+    , Tisampler2DMSArray
+    , Tisampler2DRect
+    , Tisampler3D
+    , TisamplerBuffer
+    , TisamplerCube
+    , Tivec2
+    , Tivec3
+    , Tivec4
+    , Tmat2
+    , Tmat2x2
+    , Tmat2x3
+    , Tmat2x4
+    , Tmat3
+    , Tmat3x2
+    , Tmat3x3
+    , Tmat3x4
+    , Tmat4
+    , Tmat4x2
+    , Tmat4x3
+    , Tmat4x4
+    , Tsampler1D
+    , Tsampler1DArray
+    , Tsampler1DArrayShadow
+    , Tsampler1DShadow
+    , Tsampler2D
+    , Tsampler2DArray
+    , Tsampler2DArrayShadow
+    , Tsampler2DMS
+    , Tsampler2DMSArray
+    , Tsampler2DRect
+    , Tsampler2DRectShadow
+    , Tsampler2DShadow
+    , Tsampler3D
+    , TsamplerBuffer
+    , TsamplerCube
+    , TsamplerCubeArray
+    , TsamplerCubeArrayShadow
+    , TsamplerCubeShadow
+    , Tuint
+    , Tusampler1D
+    , Tusampler1DArray
+    , Tusampler2D
+    , Tusampler2DArray
+    , Tusampler2DMS
+    , Tusampler2DMSArray
+    , Tusampler2DRect
+    , Tusampler3D
+    , TusamplerBuffer
+    , TusamplerCube
+    , Tuvec2
+    , Tuvec3
+    , Tuvec4
+    , Tvec2
+    , Tvec3
+    , Tvec4
+    , Tvoid
     ]
 
 

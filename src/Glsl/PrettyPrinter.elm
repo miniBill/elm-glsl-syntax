@@ -1,6 +1,6 @@
 module Glsl.PrettyPrinter exposing (argType, binaryOperation, declaration, expr, float, stat, type_, unaryOperation)
 
-import Glsl exposing (ArgType(..), BinaryOperation(..), Declaration(..), Expression(..), RelationOperation(..), Statement(..), Type(..), UnaryOperation(..))
+import Glsl exposing (ArgType(..), BinaryOperation(..), Declaration(..), Expression(..), Precision(..), RelationOperation(..), Statement(..), Type(..), UnaryOperation(..))
 import Glsl.Node as Node exposing (Node(..))
 
 
@@ -937,3 +937,13 @@ declaration (Node _ decl) =
 
         UniformDeclaration tipe (Node _ name) ->
             "uniform " ++ type_ tipe ++ " " ++ name ++ ";"
+
+        PrecisionDeclaration prec tipe ->
+            "precision " ++ precision prec ++ " " ++ type_ tipe ++ ";"
+
+
+precision : Node Precision -> String
+precision (Node _ prec) =
+    case prec of
+        Highp ->
+            "highp"
