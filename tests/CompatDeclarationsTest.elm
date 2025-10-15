@@ -8,7 +8,7 @@ import Glsl.Parser
 import IsAlmostEquals
 import Parser.Advanced
 import Test exposing (Test, test)
-import Utils exposing (float, highp, precision)
+import Utils exposing (add, by, call, decl, f, float, func, highp, in_, precision, return, subtract, uniform, var, vec2, vec3)
 
 
 compatTest : Test
@@ -28,6 +28,59 @@ compatTest =
 expected : List (Node Declaration)
 expected =
     [ precision highp float
+    , uniform float "u_whiteLines"
+    , uniform float "u_completelyReal"
+    , uniform float "u_drawAxes"
+    , uniform vec2 "u_zoomCenter"
+    , uniform float "u_viewportWidth"
+    , uniform float "u_canvasWidth"
+    , uniform float "u_canvasHeight"
+    , uniform float "u_phi"
+    , uniform float "u_theta"
+    , func vec3
+        "hl2rgb"
+        [ in_ float "h", in_ float "l" ]
+        [ decl vec3
+            "rgb"
+            (call "clamp"
+                [ subtract
+                    (call "abs"
+                        [ subtract
+                            (call "mod"
+                                [ add
+                                    (by (var "h") (f 6))
+                                    (call "vec3" [ f 0, f 4, f 2 ])
+                                , f 6
+                                ]
+                            )
+                            (f 3)
+                        ]
+                    )
+                    (f 1)
+                , f 0
+                , f 1
+                ]
+            )
+        , return
+            (add
+                (var "l")
+                (by
+                    (subtract
+                        (var "rgb")
+                        (f 0.5)
+                    )
+                    (subtract
+                        (f 1)
+                        (call "abs"
+                            [ subtract
+                                (by (f 2) (var "l"))
+                                (f 1)
+                            ]
+                        )
+                    )
+                )
+            )
+        ]
     ]
 
 

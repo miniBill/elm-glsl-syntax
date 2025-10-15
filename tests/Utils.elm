@@ -1,4 +1,4 @@
-module Utils exposing (add, assign, by, call, const, constDecl, decl, div, dot, expr, f, float, func, highp, i, in_, int, mat2, negate_, out, precision, return, subtract, var, vec2, vec3, vec4, void)
+module Utils exposing (add, assign, by, call, const, constDecl, decl, div, dot, expr, f, float, func, highp, i, in_, int, mat2, negate_, out, precision, return, subtract, uniform, var, vec2, vec3, vec4, void)
 
 import Glsl exposing (ArgType(..), BinaryOperation(..), Declaration(..), Expression(..), Precision(..), Statement(..), Type(..), UnaryOperation(..))
 import Glsl.Node as Node exposing (Node)
@@ -6,24 +6,24 @@ import Glsl.Node as Node exposing (Node)
 
 const : (String -> ( Type, a )) -> String -> Node Expression -> Node Declaration
 const t n v =
-    Node.empty (ConstDeclaration (Node.empty (Tuple.first (t ""))) (Node.empty n) v)
+    Node.empty (ConstDeclaration (type_ t) (Node.empty n) v)
 
 
 constDecl : (String -> ( Type, a )) -> String -> Node Expression -> Node Statement
 constDecl t n v =
-    Node.empty (Decl { const = Just (Node.empty ()) } (Node.empty (Tuple.first (t ""))) (Node.empty n) (Just v))
+    Node.empty (Decl { const = Just (Node.empty ()) } (type_ t) (Node.empty n) (Just v))
 
 
 decl : (String -> ( Type, a )) -> String -> Node Expression -> Node Statement
 decl t n v =
-    Node.empty (Decl { const = Nothing } (Node.empty (Tuple.first (t ""))) (Node.empty n) (Just v))
+    Node.empty (Decl { const = Nothing } (type_ t) (Node.empty n) (Just v))
 
 
 func : (String -> ( Type, a )) -> String -> List ( ArgType, String ) -> List (Node Statement) -> Node Declaration
 func t n a s =
     Node.empty
         (FunctionDeclaration
-            (Node.empty (Tuple.first (t "")))
+            (type_ t)
             (Node.empty n)
             (a
                 |> List.map
@@ -36,7 +36,17 @@ func t n a s =
 
 precision : Node Precision -> (String -> ( Type, String )) -> Node Declaration
 precision kind tipe =
-    Node.empty (PrecisionDeclaration kind (Node.empty (Tuple.first (tipe ""))))
+    Node.empty (PrecisionDeclaration kind (type_ tipe))
+
+
+type_ : (String -> ( Type, a )) -> Node Type
+type_ t =
+    Node.empty (Tuple.first (t ""))
+
+
+uniform : (String -> ( Type, a )) -> String -> Node Declaration
+uniform t name =
+    Node.empty (UniformDeclaration (type_ t) (Node.empty name))
 
 
 highp : Node Precision
@@ -81,12 +91,12 @@ mat2 s =
 
 in_ : (String -> ( Type, a )) -> a -> ( ArgType, a )
 in_ t n =
-    ( ArgIn (Node.empty (Tuple.first (t ""))), n )
+    ( ArgIn (type_ t), n )
 
 
 out : (String -> ( Type, a )) -> a -> ( ArgType, a )
 out t n =
-    ( ArgOut (Node.empty (Tuple.first (t ""))), n )
+    ( ArgOut (type_ t), n )
 
 
 var : String -> Node Expression
